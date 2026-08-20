@@ -2,6 +2,13 @@
 // 這個檔案負責：把左側表單填的資料（data 物件），轉成跟 Eri 原本
 // Gmail 邀約信長得一樣風格的完整 HTML（藍色標題、黃底強調、分隔線、簽名檔...）。
 // 右側預覽 iframe 跟「複製 HTML」按鈕都是呼叫 renderEmailHTML(data)。
+//
+// 字體設定：內文統一用 <font face="ms pgothic, sans-serif">，
+// 只有「Sincerely」署名那行用 <font face="garamond, times new roman, serif">，
+// 這是照 Eri 在 Gmail 裡實際編輯過、確認過的版本設定的，不要隨意改動。
+
+const BODY_FONT = 'ms pgothic, sans-serif';
+const SIGNOFF_FONT = 'garamond, times new roman, serif';
 
 function escapeHtml(str) {
   if (str === undefined || str === null) return '';
@@ -40,12 +47,13 @@ function joinHighlighted(str, sep, highlight) {
 }
 
 // 預設資料：對應 Eri 原本那封信的內容，方便一打開就能看到範例、直接照著改
+// 平台名稱固定不開放編輯，直接寫死在 renderEmailHTML() 裡（搜尋 PLATFORM_NAME）
+const PLATFORM_NAME = 'SAT. Knowledge 知識衛星';
+
 const DEFAULT_DATA = {
   recipientName: '永和超級阿公',
-  platformName: 'SAT. Knowledge 知識衛星',
   senderIntroName: 'Eri（ㄝ里）',
   openingObservation: '有留意到粉專平時分享許多阿公的生活日常，阿公總是充滿活力，也讓大家看到能夠健康、有活力地享受生活，是一件很美好的事！',
-  courseConnectionNote: '這次我們想分享的課程同樣關注日常習慣與身體狀態，因此在規劃合作時就想到阿公，希望有機會邀請阿公一起體驗與分享！',
 
   collaboratorIntro: '抗癌名醫－蔡松彥醫師',
   courseTitle: '抗癌名醫的超級細胞排毒｜逆轉發炎 X 重啟高效代謝',
@@ -65,10 +73,8 @@ const DEFAULT_DATA = {
 
   images: [],
 
-  ctaProgramName: '排毒調理計畫',
-  offerTrial: true,
+  ctaParagraph: '如果您有合作意願，我們後續會再進行更詳細的方向/內容討論！\n我們也非常樂意提供課程試看內容，讓您可以更安心了解課程內容！',
   closingNote: '相信透過阿公的真實分享，可以鼓勵更多人開始關心自己的健康，找到適合自己的調整方式，一步一步養成更健康的生活！',
-  blessingNote: '也祝福阿公與家人們身體健康！',
   signOffName: 'Eri',
 
   courseUrl: 'https://sat.cool/course/175',
@@ -107,24 +113,21 @@ const DEFAULT_DATA = {
 function renderHighlightsHtml(highlights) {
   if (!highlights || highlights.length === 0) return '';
   return highlights.map(h => `
-            <p style="color:rgb(51,51,51);margin:0px 0px 16px">
-              <strong>■ ${escapeHtml(h.title)}</strong><br>
-              ${textToHtml(h.body)}
-            </p>`).join('');
+                  <p style="color:rgb(51,51,51);margin:0px 0px 16px"><font face="${BODY_FONT}"><strong>■ ${escapeHtml(h.title)}</strong><br>
+                  ${textToHtml(h.body)}
+                  </font></p>`).join('');
 }
 
 function renderImagesHtml(images) {
   if (!images || images.length === 0) return '';
   return images.map(img => `
-            <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt || '課程圖片')}" style="max-width:100%;height:auto;margin:0 0 16px;display:block;border:0;">`).join('');
+                  <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt || '課程圖片')}" style="max-width:100%;height:auto;margin:0 0 16px;display:block;border:0;">`).join('');
 }
 
 function renderCredentialsHtml(list) {
   if (!list || list.length === 0) return '';
   return list.map(c => `
-            <p style="color:rgb(51,51,51);margin:0px 0px 8px">
-              ■ ${escapeHtml(c)}
-            </p>`).join('');
+                  <p style="margin:0px 0px 8px"><font face="${BODY_FONT}"><font color="#0000ff">■</font><font color="#333333"> ${escapeHtml(c)}</font></font></p>`).join('');
 }
 
 function renderEmailHTML(raw) {
@@ -133,10 +136,6 @@ function renderEmailHTML(raw) {
   const requestedItemsHtml = joinHighlighted(d.requestedItems, ' / ', false);
   const famousKOLsHtml = linesToArray(d.famousKOLs).map(escapeHtml)
     .map(n => `<b style="background-color:rgb(255,255,0)">${n}</b>`).join('、');
-
-  const trialClause = d.offerTrial
-    ? `並於後續進一步討論合作方向與呈現方式，我們也非常樂意<span style="background-color:rgb(255,255,0)"><b>提供課程試看</b></span>，讓您事前能更安心、完整地了解計畫內容！`
-    : `並於後續進一步討論合作方向與呈現方式！`;
 
   const topImageBlock = d.topImageUrl
     ? `<img src="${escapeHtml(d.topImageUrl)}" alt="課程圖片" width="535" style="max-width:100%;height:auto;margin:0 0 22px;display:block;border:0;">`
@@ -150,76 +149,75 @@ function renderEmailHTML(raw) {
           <table role="presentation" width="700" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:700px;border-collapse:collapse;background-color:#ffffff;border-top:5px solid #265bf6">
             <tbody>
               <tr>
-                <td style="padding:34px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','PingFang TC','Microsoft JhengHei',Arial,sans-serif;font-size:16px;line-height:1.8;word-break:break-word">
+                <td style="padding:34px;line-height:1.8;word-break:break-word">
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px">${escapeHtml(d.recipientName)}，您好！</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${escapeHtml(d.recipientName)}，您好！</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px">我們是 <b>${escapeHtml(d.platformName)}</b> 線上課程平台，我是專案經理${escapeHtml(d.senderIntroName)}！</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">我們是 <b>${PLATFORM_NAME}</b> 線上課程平台，我是專案經理${escapeHtml(d.senderIntroName)}！</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px">${textToHtml(d.openingObservation)}</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${textToHtml(d.openingObservation)}</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px">
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">
                     我們有一堂與<b>${escapeHtml(d.collaboratorIntro)}</b>，合作推出的線上課程<b>【 ${escapeHtml(d.courseTitle)} 】</b>，課程已<span style="background-color:rgb(255,255,0)"><b>突破${escapeHtml(d.studentCount)}位學員支持</b></span>！
-                  </p>
+                  </font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 28px">
+                  <p style="color:rgb(51,51,51);margin:0px 0px 28px"><font face="${BODY_FONT}">
                     目前預計於<span style="background-color:rgb(255,255,0)">【<b>${escapeHtml(d.campaignPeriod)}</b>】</span>進行行銷推廣，希望這次有機會邀請您合作，想先初步和您詢問<span style="background-color:rgb(255,255,0)">【<b> ${requestedItemsHtml} </b>】</span>分別的報價與時間檔期！
-                  </p>
+                  </font></p>
 
                   <div style="height:1px;background-color:rgb(225,227,225);margin:0px 0px 28px"></div>
 
-                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;font-size:20px;line-height:1.5;font-weight:700">【✨課程亮點】</p>
+                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;line-height:1.5;font-weight:700"><font face="${BODY_FONT}">【✨課程亮點】</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 14px">
+                  <p style="color:rgb(51,51,51);margin:0px 0px 14px"><font face="${BODY_FONT}">
                     這門課程目前已有超過 ${escapeHtml(d.studentCount)} 位學員參與，也有許多創作者如 ${famousKOLsHtml} 等共同推廣，獲得熱烈回響！
-                  </p>
+                  </font></p>
 
-                  <p style="margin:0px 0px 26px"><font color="#0000ff"><b>《${escapeHtml(d.courseTitle)}》</b>${textToHtml(d.courseIntroParagraph)}</font></p>
+                  <p style="margin:0px 0px 26px"><font color="#0000ff" face="${BODY_FONT}"><b>《${escapeHtml(d.courseTitle)}》</b>${textToHtml(d.courseIntroParagraph)}</font></p>
 
-                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;font-size:18px;line-height:1.6;font-weight:700">｜五大亮點｜</p>
+                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;line-height:1.6;font-weight:700"><font face="${BODY_FONT}">｜五大亮點｜</font></p>
                   ${renderHighlightsHtml(d.highlights)}
                   ${renderImagesHtml(d.images)}
 
-                  <p style="color:rgb(51,51,51);margin:22px 0px 22px">如果${escapeHtml(d.recipientName)}有合作意願，我們希望邀請您親自體驗「<b style="background-color:rgb(255,255,0)">${escapeHtml(d.ctaProgramName)}</b>」，${trialClause}</p>
+                  <p style="color:rgb(51,51,51);margin:22px 0px"><font face="${BODY_FONT}">${textToHtml(d.ctaParagraph)}</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px">${textToHtml(d.closingNote)}</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${textToHtml(d.closingNote)}</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 6px">
+                  <p style="color:rgb(51,51,51);margin:0px 0px 6px"><font face="${BODY_FONT}">
                     感謝您撥冗閱信，下方有更多課程資訊提供您參考，<br>
-                    若有其他想法、詢問或合作建議都歡迎回信，非常期待有機會與${escapeHtml(d.recipientName)}合作！<br>
-                    ${escapeHtml(d.blessingNote)}
-                  </p>
+                    若有其他想法、詢問或合作建議都歡迎回信，非常期待有機會與${escapeHtml(d.recipientName)}合作！<br><br>
+                  </font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 28px">Sincerely ,<br>${escapeHtml(d.signOffName)}</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 28px"><font face="${SIGNOFF_FONT}">Sincerely ,<br>${escapeHtml(d.signOffName)}</font></p>
 
                   <div style="height:1px;background-color:rgb(225,227,225);margin:0px 0px 28px"></div>
 
-                  <p style="color:rgb(38,91,246);margin:0px 0px 10px;font-size:19px;line-height:1.6;font-weight:700">《${escapeHtml(d.courseTitle)}》</p>
+                  <p style="color:rgb(38,91,246);margin:0px 0px 10px;line-height:1.6;font-weight:700"><font face="${BODY_FONT}">《${escapeHtml(d.courseTitle)}》</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 10px">
+                  <p style="color:rgb(51,51,51);margin:0px 0px 10px"><font face="${BODY_FONT}">
                     詳細課程介紹：
                     <a href="${escapeHtml(d.courseUrl)}" style="color:#265bf6;text-decoration:underline" target="_blank">${escapeHtml(d.courseUrl)}</a>
-                  </p>
+                  </font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 18px;font-weight:700">課程已超過${escapeHtml(d.studentCount)}多位學員熱烈支持！</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 18px;font-weight:700"><font face="${BODY_FONT}">課程已超過${escapeHtml(d.studentCount)}多位學員熱烈支持！</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 10px;font-weight:700">「${escapeHtml(d.painQuestion)}」</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 10px">${textToHtml(d.painBody1)}</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 10px">${textToHtml(d.painBody2)}</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 28px">${textToHtml(d.courseDescLong)}</p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 10px;font-weight:700"><font face="${BODY_FONT}">「${escapeHtml(d.painQuestion)}」</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 10px"><font face="${BODY_FONT}">${textToHtml(d.painBody1)}</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 10px"><font face="${BODY_FONT}">${textToHtml(d.painBody2)}</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 28px"><font face="${BODY_FONT}">${textToHtml(d.courseDescLong)}</font></p>
 
                   ${topImageBlock}
 
-                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;font-size:18px;line-height:1.6;font-weight:700">｜講師介紹｜</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 14px"><b>${escapeHtml(d.instructorName)}</b> ${textToHtml(d.instructorBio)}</p>
+                  <p style="color:rgb(38,91,246);margin:0px 0px 14px;line-height:1.6;font-weight:700"><font face="${BODY_FONT}">｜講師介紹｜</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 14px"><font face="${BODY_FONT}"><b>${escapeHtml(d.instructorName)}</b> ${textToHtml(d.instructorBio)}</font></p>
                   ${renderCredentialsHtml(d.credentials)}
 
-                  <p style="color:rgb(38,91,246);margin:28px 0px 14px;font-size:18px;line-height:1.6;font-weight:700">｜課程介紹｜</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 8px">課程名稱：${escapeHtml(d.courseNameDetail)}</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 8px">課程時數：${escapeHtml(d.courseDuration)}</p>
-                  <p style="margin:0px 0px 8px"><font color="#333333">預定售價：${escapeHtml(d.priceOriginal)}，</font><b style="background-color:rgb(255,255,0)"><font color="#0000ff">${escapeHtml(d.pricePromoNote)}</font></b></p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 8px">課程類型：${escapeHtml(d.courseType)}</p>
-                  <p style="color:rgb(51,51,51);margin:0px 0px 28px">觀看平台：${escapeHtml(d.viewingPlatform)}</p>
+                  <p style="color:rgb(38,91,246);margin:28px 0px 14px;line-height:1.6;font-weight:700"><font face="${BODY_FONT}">｜課程介紹｜</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 8px"><font face="${BODY_FONT}">課程名稱：${escapeHtml(d.courseNameDetail)}</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 8px"><font face="${BODY_FONT}">課程時數：${escapeHtml(d.courseDuration)}</font></p>
+                  <p style="margin:0px 0px 8px"><font face="${BODY_FONT}"><font color="#333333">預定售價：${escapeHtml(d.priceOriginal)}，</font><b style="background-color:rgb(255,255,0)"><font color="#0000ff">${escapeHtml(d.pricePromoNote)}</font></b></font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 8px"><font face="${BODY_FONT}">課程類型：${escapeHtml(d.courseType)}</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 28px"><font face="${BODY_FONT}">觀看平台：${escapeHtml(d.viewingPlatform)}</font></p>
 
                   <div style="height:1px;background-color:rgb(225,227,225);margin:0px 0px 28px"></div>
 
@@ -230,11 +228,11 @@ function renderEmailHTML(raw) {
                           ${d.companyLogoUrl ? `<img src="${escapeHtml(d.companyLogoUrl)}" width="200" style="border:0;display:block">` : ''}
                         </td>
                         <td style="vertical-align:middle;padding:5pt">
-                          <p style="line-height:1.38;margin:0"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">M:${escapeHtml(d.senderMobile)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">E:${escapeHtml(d.senderEmail)}</span></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">M:${escapeHtml(d.senderMobile)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">E:${escapeHtml(d.senderEmail)}</span></font></p>
                         </td>
                       </tr>
                     </tbody>
