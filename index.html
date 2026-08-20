@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOL 合作邀約信件產生器</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="logo-dot"></span>
+    KOL 合作邀約信件產生器
+  </div>
+  <div class="topbar-actions">
+    <select id="courseSelect" class="course-select">
+      <option value="">－ 新的一封信（未儲存） －</option>
+    </select>
+    <button id="btnNewCourse" class="btn btn-ghost" title="清空表單，開始新課程">＋ 新課程</button>
+    <button id="btnSave" class="btn btn-primary" title="儲存目前課程資料">儲存課程</button>
+    <button id="btnSaveAs" class="btn btn-ghost" title="另存為新課程">另存新檔</button>
+    <button id="btnDelete" class="btn btn-danger-ghost" title="刪除目前選取的課程">刪除</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- 左側：輸入欄位 -->
+  <section class="panel form-panel" id="formPanel">
+    <div class="save-status" id="saveStatus"></div>
+
+    <details class="group" open>
+      <summary>① 收件人與開場白</summary>
+      <div class="group-body">
+        <label>收件人稱呼 <span class="hint">例如：永和超級阿公</span>
+          <input type="text" data-field="recipientName" placeholder="永和超級阿公">
+        </label>
+        <label>平台名稱
+          <input type="text" data-field="platformName" placeholder="SAT. Knowledge 知識衛星">
+        </label>
+        <label>寄件人自我介紹（暱稱）
+          <input type="text" data-field="senderIntroName" placeholder="Eri（ㄝ里）">
+        </label>
+        <label>開場觀察段落 <span class="hint">針對這位 KOL 粉專內容的客製化觀察</span>
+          <textarea data-field="openingObservation" rows="3" placeholder="有留意到粉專平時分享許多阿公的生活日常..."></textarea>
+        </label>
+        <label>課程連結段落 <span class="hint">說明為何想到邀請這位 KOL</span>
+          <textarea data-field="courseConnectionNote" rows="2" placeholder="這次我們想分享的課程同樣關注日常習慣與身體狀態..."></textarea>
+        </label>
+      </div>
+    </details>
+
+    <details class="group" open>
+      <summary>② 課程合作邀請</summary>
+      <div class="group-body">
+        <label>合作對象介紹 <span class="hint">與___合作推出</span>
+          <input type="text" data-field="collaboratorIntro" placeholder="抗癌名醫－蔡松彥醫師">
+        </label>
+        <label>課程完整名稱
+          <input type="text" data-field="courseTitle" placeholder="抗癌名醫的超級細胞排毒｜逆轉發炎 X 重啟高效代謝">
+        </label>
+        <label>學員數
+          <input type="text" data-field="studentCount" placeholder="4,600">
+        </label>
+        <label>行銷推廣檔期
+          <input type="text" data-field="campaignPeriod" placeholder="2026 / 10月中 - 2026 / 11月初">
+        </label>
+        <label>欲詢問的合作形式 <span class="hint">每行一項，會自動用「／」連接</span>
+          <textarea data-field="requestedItems" rows="2" placeholder="FB貼文&#10;IG reels&#10;限動&#10;廣告主權限 2 週"></textarea>
+        </label>
+        <label>已合作的知名創作者 <span class="hint">每行一位，會自動用「、」連接</span>
+          <textarea data-field="famousKOLs" rows="2" placeholder="吳淡如&#10;曾寶儀"></textarea>
+        </label>
+        <label>課程簡介段落
+          <textarea data-field="courseIntroParagraph" rows="3" placeholder="由蔡松彥院長結合自身抗癌經驗、整合醫學與生活型態調整..."></textarea>
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>③ 課程亮點（可新增/刪除）</summary>
+      <div class="group-body">
+        <div id="highlightsList" class="repeater-list"></div>
+        <button type="button" id="btnAddHighlight" class="btn btn-ghost btn-sm">＋ 新增亮點</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>④ 課程圖片</summary>
+      <div class="group-body">
+        <div id="imagesList" class="repeater-list"></div>
+        <button type="button" id="btnAddImage" class="btn btn-ghost btn-sm">＋ 新增圖片網址</button>
+      </div>
+    </details>
+
+    <details class="group" open>
+      <summary>⑤ 行動呼籲與結尾</summary>
+      <div class="group-body">
+        <label>體驗方案名稱
+          <input type="text" data-field="ctaProgramName" placeholder="排毒調理計畫">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" data-field="offerTrial" data-type="checkbox">
+          提供課程試看
+        </label>
+        <label>結尾鼓勵段落
+          <textarea data-field="closingNote" rows="2" placeholder="相信透過阿公的真實分享，可以鼓勵更多人開始關心自己的健康..."></textarea>
+        </label>
+        <label>祝福語
+          <input type="text" data-field="blessingNote" placeholder="也祝福阿公與家人們身體健康！">
+        </label>
+        <label>署名
+          <input type="text" data-field="signOffName" placeholder="Eri">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑥ 下方課程詳細資訊區塊</summary>
+      <div class="group-body">
+        <label>課程連結網址
+          <input type="text" data-field="courseUrl" placeholder="https://sat.cool/course/175">
+        </label>
+        <label>痛點提問（粗體）
+          <input type="text" data-field="painQuestion" placeholder="明明做了很多，為什麼身體還是常常不舒服？">
+        </label>
+        <label>痛點段落 1
+          <textarea data-field="painBody1" rows="2" placeholder="看過醫生、做過療程，也試過飲食控制、運動、保健方法..."></textarea>
+        </label>
+        <label>痛點段落 2
+          <textarea data-field="painBody2" rows="2" placeholder="也許不是你做得不夠，而是沒看見真正的問題在哪！"></textarea>
+        </label>
+        <label>課程長篇介紹
+          <textarea data-field="courseDescLong" rows="3" placeholder="抗癌名醫蔡松彥結合自身抗癌經驗與整合醫學觀點..."></textarea>
+        </label>
+        <label>頂部圖片網址
+          <input type="text" data-field="topImageUrl" placeholder="https://...">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑦ 講師介紹</summary>
+      <div class="group-body">
+        <label>講師姓名
+          <input type="text" data-field="instructorName" placeholder="蔡松彥院長">
+        </label>
+        <label>講師簡介段落
+          <textarea data-field="instructorBio" rows="3" placeholder="出身主流醫學的三專科醫師..."></textarea>
+        </label>
+        <div id="credentialsList" class="repeater-list"></div>
+        <button type="button" id="btnAddCredential" class="btn btn-ghost btn-sm">＋ 新增經歷條列</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑧ 課程規格與價格</summary>
+      <div class="group-body">
+        <label>課程名稱（詳細介紹用）
+          <input type="text" data-field="courseNameDetail" placeholder="抗癌名醫的超級細胞排毒法｜逆轉慢性發炎、重啟高效代謝">
+        </label>
+        <label>課程時數
+          <input type="text" data-field="courseDuration" placeholder="5 小時 32 分，共計17個單元">
+        </label>
+        <label>預定售價
+          <input type="text" data-field="priceOriginal" placeholder="9,800 元">
+        </label>
+        <label>優惠說明
+          <input type="text" data-field="pricePromoNote" placeholder="活動期間會有優於6折優惠，搭配KOL專屬$500折價券">
+        </label>
+        <label>課程類型
+          <input type="text" data-field="courseType" placeholder="錄播式課程，線上無限次永久觀看">
+        </label>
+        <label>觀看平台
+          <input type="text" data-field="viewingPlatform" placeholder="SAT. Knowledge 知識衛星官網">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑨ 寄件人簽名</summary>
+      <div class="group-body">
+        <label>公司 Logo 網址
+          <input type="text" data-field="companyLogoUrl" placeholder="https://.../logo.png">
+        </label>
+        <label>中文姓名
+          <input type="text" data-field="senderChineseName" placeholder="董伊淇">
+        </label>
+        <label>英文姓名
+          <input type="text" data-field="senderEnglishName" placeholder="Eri Tung">
+        </label>
+        <label>職稱
+          <input type="text" data-field="senderJobTitle" placeholder="專案經理 Project Manager">
+        </label>
+        <label>電話
+          <input type="text" data-field="senderPhone" placeholder="02-2756-6009">
+        </label>
+        <label>手機
+          <input type="text" data-field="senderMobile" placeholder="0983-755-899">
+        </label>
+        <label>Email
+          <input type="text" data-field="senderEmail" placeholder="eritung@sat.cool">
+        </label>
+      </div>
+    </details>
+
+  </section>
+
+  <!-- 右側：即時預覽 -->
+  <section class="panel preview-panel">
+    <div class="preview-toolbar">
+      <span class="preview-label">即時預覽</span>
+      <button id="btnCopyHtml" class="btn btn-primary">📋 複製 HTML（貼到 Gmail）</button>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="previewFrame" title="信件預覽"></iframe>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="template.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
