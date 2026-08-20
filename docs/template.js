@@ -20,12 +20,26 @@ function escapeHtml(str) {
 }
 
 // 多行文字 -> 每行 escape 後用 <br> 接起來（用於段落）
+// 支援簡單標記：用 **文字** 包住的部分會變成「螢光黃底＋粗體」，
+// 例如「提供**課程試看內容**」會把「課程試看內容」四個字加上黃底粗體。
 function textToHtml(str) {
   if (!str) return '';
   return String(str)
     .split('\n')
-    .map(line => escapeHtml(line))
+    .map(line => richLineToHtml(line))
     .join('<br>');
+}
+
+function richLineToHtml(line) {
+  const parts = String(line).split('**');
+  return parts
+    .map((part, i) => {
+      const escaped = escapeHtml(part);
+      return i % 2 === 1
+        ? `<b style="background-color:rgb(255,255,0)">${escaped}</b>`
+        : escaped;
+    })
+    .join('');
 }
 
 // 多行文字 -> 陣列（過濾空行），用於 requestedItems / famousKOLs 這種清單欄位
@@ -73,7 +87,7 @@ const DEFAULT_DATA = {
 
   images: [],
 
-  ctaParagraph: '如果您有合作意願，我們後續會再進行更詳細的方向/內容討論！\n我們也非常樂意提供課程試看內容，讓您可以更安心了解課程內容！',
+  ctaParagraph: '如果您有合作意願，我們後續會再進行更詳細的方向/內容討論！\n我們也非常樂意提供**課程試看內容**，讓您可以更安心了解課程內容！',
   closingNote: '相信透過阿公的真實分享，可以鼓勵更多人開始關心自己的健康，找到適合自己的調整方式，一步一步養成更健康的生活！',
   signOffName: 'Eri',
 
@@ -99,16 +113,13 @@ const DEFAULT_DATA = {
   priceOriginal: '9,800 元',
   pricePromoNote: '活動期間會有優於6折優惠，搭配KOL專屬$500折價券',
   courseType: '錄播式課程，線上無限次永久觀看',
-  viewingPlatform: 'SAT. Knowledge 知識衛星官網',
-
-  companyLogoUrl: 'https://s3.ap-northeast-1.amazonaws.com/s3.sat/logo/sat.s1_720.png',
-  senderChineseName: '董伊淇',
-  senderEnglishName: 'Eri Tung',
-  senderJobTitle: '專案經理 Project Manager',
-  senderPhone: '02-2756-6009',
-  senderMobile: '0983-755-899',
-  senderEmail: 'eritung@sat.cool'
+  viewingPlatform: 'SAT. Knowledge 知識衛星官網'
 };
+
+// 簽名檔區塊固定寫死（Eri 指定「不要改任何地方」），
+// 這是直接從 Gmail 簽名檔複製出來的原始 HTML，不透過表單欄位產生，
+// 也不會因為表單資料而改變。如果之後真的要換簽名檔內容，直接改這裡的字串。
+const FIXED_SIGNATURE_HTML = `<div><br clear="all"></div><div><br></div><span class="gmail_signature_prefix">-- </span><br><div dir="ltr" class="gmail_signature" data-smartmail="gmail_signature"><div dir="ltr"><table style="font-size:16px;color:rgb(0,0,0);word-spacing:1px;font-family:-apple-system,&quot;helvetica neue&quot;;border-width:medium;border-style:none;border-color:currentcolor;border-collapse:collapse"><tbody><tr><td style="vertical-align:bottom;padding:5pt"><p dir="ltr" style="line-height:1.656;margin-top:0pt;margin-bottom:0pt"></p></td><td style="vertical-align:middle;padding:5pt"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt"><br></p></td></tr></tbody></table><table style="font-size:16px;word-spacing:1px;font-family:-apple-system,&quot;helvetica neue&quot;;border:rgb(34,34,34);border-collapse:collapse;color:rgb(34,34,34)"><tbody style="border-color:rgb(34,34,34)"><tr style="height:92.2702pt;border-color:rgb(34,34,34)"><td style="vertical-align:bottom;padding:5pt;border-color:rgb(34,34,34)"><p dir="ltr" style="line-height:1.656;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font size="2"><img src="https://ci3.googleusercontent.com/meips/ADKq_Nb1KBYfKjUCeBVC7tVucjouWjm7eT5BD5L2tB2yjmzaj2tgiZ5FW5zLKHYe87nXgWHpZKBXzUlIM5nCMMEDfNUMcBpdxt_x4Dn5BrZBcbPPBp-_D1zzKmE=s0-d-e1-ft#https://s3.ap-northeast-1.amazonaws.com/s3.sat/logo/sat.s1_720.png" width="200" height="52" style="border-color:rgb(34,34,34)"><br></font></p></td><td style="vertical-align:middle;padding:5pt;border-color:rgb(34,34,34)"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font size="2"><b><span style="font-family:&quot;ibm plex sans&quot;,sans-serif;vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)">董伊淇 |<span>&nbsp;</span></span><span style="border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)">Eri Tung</font></span></span></b></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font style="border-color:rgb(102,102,102);color:rgb(102,102,102)" size="2"><span style="font-family:verdana,sans-serif;border-color:rgb(102,102,102)">專案經理 Project Manager</span></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(34,34,34)" size="2"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)">T:<a href="tel:02-2756-6009" target="_blank">02-2756-6009</a>&nbsp;</span></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)" size="2">M:0983-755-899</font></span></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)" size="2">E:eritung@sat.cool</font></span></p></td></tr></tbody></table></div></div>`;
 
 function renderHighlightsHtml(highlights) {
   if (!highlights || highlights.length === 0) return '';
@@ -219,24 +230,7 @@ function renderEmailHTML(raw) {
                   <p style="color:rgb(51,51,51);margin:0px 0px 8px"><font face="${BODY_FONT}">課程類型：${escapeHtml(d.courseType)}</font></p>
                   <p style="color:rgb(51,51,51);margin:0px 0px 28px"><font face="${BODY_FONT}">觀看平台：${escapeHtml(d.viewingPlatform)}</font></p>
 
-                  <div style="height:1px;background-color:rgb(225,227,225);margin:0px 0px 28px"></div>
-
-                  <table style="font-size:16px;font-family:-apple-system,'helvetica neue';border-collapse:collapse;color:rgb(34,34,34)">
-                    <tbody>
-                      <tr>
-                        <td style="vertical-align:bottom;padding:5pt">
-                          ${d.companyLogoUrl ? `<img src="${escapeHtml(d.companyLogoUrl)}" width="200" style="border:0;display:block">` : ''}
-                        </td>
-                        <td style="vertical-align:middle;padding:5pt">
-                          <p style="line-height:1.38;margin:0"><font size="2"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></font></p>
-                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></font></p>
-                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></font></p>
-                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">M:${escapeHtml(d.senderMobile)}</span></font></p>
-                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">E:${escapeHtml(d.senderEmail)}</span></font></p>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  ${FIXED_SIGNATURE_HTML}
 
                 </td>
               </tr>
