@@ -1,6 +1,29 @@
 // ===== 前端互動邏輯 =====
 // 左側表單 <-> state.current 資料物件 <-> 右側預覽 iframe
-// 課程資料透過 /api/courses 這組 REST API 存到後端 SQLite 資料庫。
+// 課程資料直接透過 Supabase JS SDK 存到 Supabase 的 Postgres 資料庫（courses 資料表）。
+// 連線資訊（網址、anon key）設定在 config.js。
+
+const SUPABASE_CONFIGURED =
+  typeof SUPABASE_URL !== 'undefined' &&
+  typeof SUPABASE_ANON_KEY !== 'undefined' &&
+  SUPABASE_URL &&
+  SUPABASE_ANON_KEY &&
+  !SUPABASE_URL.includes('你的_') &&
+  !SUPABASE_ANON_KEY.includes('你的_');
+
+let sb = null;
+let SUPABASE_LOAD_ERROR = null;
+if (SUPABASE_CONFIGURED) {
+  try {
+    // `supabase` 是 supabase-js CDN <script> 載入後掛在 window 上的全域變數，
+    // 如果 CDN 被擋住或還沒載入完成，這裡會拿不到，所以包一層 try/catch，
+    // 避免整個網頁的 JS 直接掛掉、連離線表單/預覽都不能用。
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    SUPABASE_LOAD_ERROR = err;
+    console.error('Supabase 用戶端初始化失敗：', err);
+  }
+}
 
 const state = {
   current: JSON.parse(JSON.stringify(DEFAULT_DATA)),
@@ -205,43 +228,60 @@ function renderAll() {
   updatePreview();
 }
 
-// ---------- 課程資料庫 API ----------
+// ---------- 課程資料庫（Supabase） ----------
+
+function requireSupabase() {
+  if (!sb) throw new Error('尚未設定 Supabase 連線資訊，請先編輯 public/config.js');
+}
 
 async function fetchCourseList() {
-  const res = await fetch('/api/courses');
-  if (!res.ok) throw new Error('讀取課程列表失敗');
-  return res.json();
+  requireSupabase();
+  const { data, error } = await sb
+    .from('courses')
+    .select('id, name, updated_at')
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data;
 }
 
 async function fetchCourse(id) {
-  const res = await fetch(`/api/courses/${id}`);
-  if (!res.ok) throw new Error('讀取課程資料失敗');
-  return res.json();
+  requireSupabase();
+  const { data, error } = await sb
+    .from('courses')
+    .select('id, name, data, updated_at, created_at')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 async function createCourse(name, data) {
-  const res = await fetch('/api/courses', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, data }),
-  });
-  if (!res.ok) throw new Error('新增課程失敗');
-  return res.json();
+  requireSupabase();
+  const { data: row, error } = await sb
+    .from('courses')
+    .insert({ name, data })
+    .select()
+    .single();
+  if (error) throw error;
+  return row;
 }
 
 async function updateCourseApi(id, name, data) {
-  const res = await fetch(`/api/courses/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, data }),
-  });
-  if (!res.ok) throw new Error('更新課程失敗');
-  return res.json();
+  requireSupabase();
+  const { data: row, error } = await sb
+    .from('courses')
+    .update({ name, data })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return row;
 }
 
 async function deleteCourseApi(id) {
-  const res = await fetch(`/api/courses/${id}`, { method: 'DELETE' });
-  if (!res.ok && res.status !== 204) throw new Error('刪除課程失敗');
+  requireSupabase();
+  const { error } = await sb.from('courses').delete().eq('id', id);
+  if (error) throw error;
 }
 
 async function refreshCourseSelect(selectId) {
@@ -287,7 +327,7 @@ document.getElementById('btnSave').addEventListener('click', async () => {
     updateSaveStatus();
   } catch (err) {
     console.error(err);
-    showToast('儲存失敗，請稍後再試');
+    showToast(`儲存失敗：${err.message || '請稍後再試'}`);
   }
 });
 
@@ -305,7 +345,7 @@ document.getElementById('btnSaveAs').addEventListener('click', async () => {
     updateSaveStatus();
   } catch (err) {
     console.error(err);
-    showToast('另存失敗，請稍後再試');
+    showToast(`另存失敗：${err.message || '請稍後再試'}`);
   }
 });
 
@@ -325,7 +365,7 @@ document.getElementById('btnDelete').addEventListener('click', async () => {
     renderAll();
   } catch (err) {
     console.error(err);
-    showToast('刪除失敗，請稍後再試');
+    showToast(`刪除失敗：${err.message || '請稍後再試'}`);
   }
 });
 
@@ -347,7 +387,7 @@ els.courseSelect.addEventListener('change', async () => {
     showToast(`已載入課程「${course.name}」`);
   } catch (err) {
     console.error(err);
-    showToast('載入課程資料失敗');
+    showToast(`載入課程資料失敗：${err.message || ''}`);
   }
 });
 
@@ -391,11 +431,17 @@ document.getElementById('btnCopyHtml').addEventListener('click', async () => {
 
 (async function init() {
   bindStaticFields();
-  try {
-    await refreshCourseSelect();
-  } catch (err) {
-    console.error(err);
-    showToast('無法連線到課程資料庫，仍可離線編輯與預覽');
+  if (!SUPABASE_CONFIGURED) {
+    showToast('尚未設定 Supabase：請編輯 public/config.js 填入你的網址與 anon key');
+  } else if (SUPABASE_LOAD_ERROR || !sb) {
+    showToast('Supabase 程式庫載入失敗，請檢查網路連線或重新整理頁面');
+  } else {
+    try {
+      await refreshCourseSelect();
+    } catch (err) {
+      console.error(err);
+      showToast('連線 Supabase 失敗，請確認 config.js 設定與資料表是否正確');
+    }
   }
   renderAll();
 })();

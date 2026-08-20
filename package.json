@@ -1,0 +1,9 @@
+{
+  "name": "kol-email-builder",
+  "version": "2.0.0",
+  "description": "KOL 合作邀約信件產生器 - 純前端（左側輸入課程/KOL資訊，右側即時預覽信件），資料存在 Supabase",
+  "private": true,
+  "scripts": {
+    "dev": "npx --yes serve public"
+  }
+}
