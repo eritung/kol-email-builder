@@ -47,9 +47,11 @@ function joinHighlighted(str, sep, highlight) {
 }
 
 // 預設資料：對應 Eri 原本那封信的內容，方便一打開就能看到範例、直接照著改
+// 平台名稱固定不開放編輯，直接寫死在 renderEmailHTML() 裡（搜尋 PLATFORM_NAME）
+const PLATFORM_NAME = 'SAT. Knowledge 知識衛星';
+
 const DEFAULT_DATA = {
   recipientName: '永和超級阿公',
-  platformName: 'SAT. Knowledge 知識衛星',
   senderIntroName: 'Eri（ㄝ里）',
   openingObservation: '有留意到粉專平時分享許多阿公的生活日常，阿公總是充滿活力，也讓大家看到能夠健康、有活力地享受生活，是一件很美好的事！',
 
@@ -71,8 +73,7 @@ const DEFAULT_DATA = {
 
   images: [],
 
-  ctaProgramName: '排毒調理計畫',
-  offerTrial: true,
+  ctaParagraph: '如果您有合作意願，我們後續會再進行更詳細的方向/內容討論！\n我們也非常樂意提供課程試看內容，讓您可以更安心了解課程內容！',
   closingNote: '相信透過阿公的真實分享，可以鼓勵更多人開始關心自己的健康，找到適合自己的調整方式，一步一步養成更健康的生活！',
   signOffName: 'Eri',
 
@@ -136,10 +137,6 @@ function renderEmailHTML(raw) {
   const famousKOLsHtml = linesToArray(d.famousKOLs).map(escapeHtml)
     .map(n => `<b style="background-color:rgb(255,255,0)">${n}</b>`).join('、');
 
-  const trialClause = d.offerTrial
-    ? `並於後續進一步討論合作方向與呈現方式，我們也非常樂意<span style="background-color:rgb(255,255,0)"><b>提供課程試看</b></span>，讓您事前能更安心、完整地了解計畫內容！`
-    : `並於後續進一步討論合作方向與呈現方式！`;
-
   const topImageBlock = d.topImageUrl
     ? `<img src="${escapeHtml(d.topImageUrl)}" alt="課程圖片" width="535" style="max-width:100%;height:auto;margin:0 0 22px;display:block;border:0;">`
     : '';
@@ -156,7 +153,7 @@ function renderEmailHTML(raw) {
 
                   <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${escapeHtml(d.recipientName)}，您好！</font></p>
 
-                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">我們是 <b>${escapeHtml(d.platformName)}</b> 線上課程平台，我是專案經理${escapeHtml(d.senderIntroName)}！</font></p>
+                  <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">我們是 <b>${PLATFORM_NAME}</b> 線上課程平台，我是專案經理${escapeHtml(d.senderIntroName)}！</font></p>
 
                   <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${textToHtml(d.openingObservation)}</font></p>
 
@@ -182,7 +179,7 @@ function renderEmailHTML(raw) {
                   ${renderHighlightsHtml(d.highlights)}
                   ${renderImagesHtml(d.images)}
 
-                  <p style="color:rgb(51,51,51);margin:22px 0px"><font face="${BODY_FONT}">如果${escapeHtml(d.recipientName)}有合作意願，我們希望邀請您親自體驗「<b style="background-color:rgb(255,255,0)">${escapeHtml(d.ctaProgramName)}</b>」，${trialClause}</font></p>
+                  <p style="color:rgb(51,51,51);margin:22px 0px"><font face="${BODY_FONT}">${textToHtml(d.ctaParagraph)}</font></p>
 
                   <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${textToHtml(d.closingNote)}</font></p>
 
@@ -231,11 +228,11 @@ function renderEmailHTML(raw) {
                           ${d.companyLogoUrl ? `<img src="${escapeHtml(d.companyLogoUrl)}" width="200" style="border:0;display:block">` : ''}
                         </td>
                         <td style="vertical-align:middle;padding:5pt">
-                          <p style="line-height:1.38;margin:0"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">M:${escapeHtml(d.senderMobile)}</span></p>
-                          <p style="line-height:1.38;margin:0"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">E:${escapeHtml(d.senderEmail)}</span></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">M:${escapeHtml(d.senderMobile)}</span></font></p>
+                          <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">E:${escapeHtml(d.senderEmail)}</span></font></p>
                         </td>
                       </tr>
                     </tbody>
