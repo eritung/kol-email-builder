@@ -269,3 +269,60 @@ input[type="text"]:focus, textarea:focus {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ---------- Site-level tool tabs (shared across every tool on this page) ---------- */
+/* Fixed height (rather than padding-driven) so .topbar's sticky offset and
+   .layout's viewport-height calc below can subtract an exact, predictable
+   number instead of guessing. */
+.site-tabs {
+  height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 20px;
+  background: var(--panel-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.site-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-light);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.site-tab:hover {
+  color: var(--text);
+  background: var(--bg);
+}
+.site-tab.active {
+  color: var(--blue);
+  background: var(--blue-soft, #eaf0ff);
+}
+
+/* The invite-generator's own topbar was originally the topmost sticky
+   element (top: 0); it now sits below the 44px tab bar instead. */
+#view-invite .topbar {
+  top: 44px;
+}
+#view-invite .layout {
+  height: calc(100vh - 53px - 44px);
+}
+@media (max-width: 900px) {
+  #view-invite .layout { height: auto; }
+}
+
+/* The reply tool's own toolbar is likewise sticky at top: 0 by default;
+   shift it below the tab bar too. */
+#view-reply .rh-toolbar {
+  top: 44px;
+}
