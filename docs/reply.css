@@ -1,4 +1,4 @@
-:root{
+  :root{
     --rh-blue:#265bf6;
     --rh-blue-dark:#1a44c4;
     --rh-blue-soft:#eaf0ff;
@@ -48,11 +48,13 @@
     --rh-shadow: 0 1px 2px rgba(0,0,0,0.3), 0 20px 44px -16px rgba(0,0,0,0.6);
   }
 
-  #view-reply{
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
     background:var(--rh-canvas);
     color:var(--rh-ink);
     font-family:'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-    min-height:calc(100vh - 44px);
+    min-height:100vh;
   }
 
   /* ---------- Toolbar ---------- */

@@ -140,6 +140,7 @@
   // a negative text-indent — plain <p> tags with inline styles, which is the
   // one structure already proven to survive Gmail's paste sanitizer.
   const LIST_PREFIX_RE = /^(?:● |\d+\. )/;
+  const LIST_PREFIX_SEARCH_RE = /● |\d+\. /; // same alternatives, unanchored — for finding a prefix that ended up NOT at the start
 
   function stripListPrefix(el){
     const first = el.firstChild;
@@ -176,10 +177,136 @@
         el.style.textIndent = '-20px';
       }
     });
+    if (type === 'number') renumberFrom(blocks[0]);
   }
 
   document.getElementById('rhBullet').addEventListener('click', ()=>toggleListPrefix('bullet'));
   document.getElementById('rhNumber').addEventListener('click', ()=>toggleListPrefix('number'));
+
+  // Keeps a contiguous run of numbered-list paragraphs reading 1, 2, 3...
+  // in order. Called after any edit that could shift the numbering (toggling
+  // the button on a mid-list selection, or pressing Enter to add a line) so
+  // items below the edit point don't end up with a stale/duplicate number.
+  function renumberFrom(block){
+    if (!block) return;
+    let start = block;
+    while (start.previousElementSibling && start.previousElementSibling.dataset && start.previousElementSibling.dataset.rhList === 'number'){
+      start = start.previousElementSibling;
+    }
+    let n = 1;
+    let node = start;
+    while (node && node.dataset && node.dataset.rhList === 'number'){
+      const first = node.firstChild;
+      if (first && first.nodeType === Node.TEXT_NODE){
+        first.textContent = first.textContent.replace(/^\d+\.\s?/, n + '. ');
+      }
+      n++;
+      node = node.nextElementSibling;
+    }
+  }
+
+  // ---------- Continue bullet/number lists on Enter ----------
+  // This turned out to be a genuinely deep contenteditable quirk. Three
+  // approaches were tried and each broke in a way only visible under real
+  // (not just single-shot) testing:
+  //  - keydown/beforeinput + preventDefault(), doing the paragraph split by
+  //    hand: successfully stopped the browser's own duplicate empty
+  //    paragraph, but Chromium still forcibly reset the caret to the start
+  //    of the new line right after our handler returned, every time.
+  //  - letting the native split happen and fixing the missing prefix
+  //    afterward on a setTimeout/requestAnimationFrame: avoided that reset,
+  //    but turned out to be flakier than it looked — re-running the exact
+  //    same single Enter-then-type sequence repeatedly showed the fix
+  //    landing correctly only part of the time, since it's still racing
+  //    Chromium's own input pipeline rather than being synchronized with it.
+  // The reliable fix is to stop trying to control the caret at all. Instead:
+  // insert the missing prefix synchronously (DOM writes reliably stick,
+  // it's only the caret Chromium keeps fighting over), then, on every
+  // following keystroke, check whether the prefix is still the first thing
+  // in the paragraph and — if the caret landed in front of it — move it back
+  // to the front and re-derive where the caret should end up. This reacts to
+  // wherever Chromium actually put the caret instead of racing to set it
+  // first, so there's nothing left to win or lose a timing race against.
+  editor.addEventListener('input', (e)=>{
+    if (e.inputType === 'insertParagraph'){
+      fixListContinuationOnEnter();
+      return;
+    }
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const block = getTopLevelBlock(sel.getRangeAt(0).startContainer);
+    if (block && block.dataset.rhList) normalizeListPrefixPosition(block);
+  });
+
+  function normalizeListPrefixPosition(block){
+    const first = block.firstChild;
+    if (!first || first.nodeType !== Node.TEXT_NODE) return;
+    if (LIST_PREFIX_RE.test(first.textContent)) return; // already in the right place
+
+    const m = first.textContent.match(LIST_PREFIX_SEARCH_RE);
+    if (!m) return; // prefix isn't in this text node at all — nothing we can recover here
+
+    const sel = window.getSelection();
+    const range = sel.rangeCount ? sel.getRangeAt(0) : null;
+    const caretOffset = (range && range.startContainer === first) ? range.startOffset : null;
+
+    const text = first.textContent;
+    const prefixStr = m[0];
+    const prefixIndex = text.indexOf(prefixStr);
+    const fixedText = prefixStr + text.slice(0, prefixIndex) + text.slice(prefixIndex + prefixStr.length);
+    first.textContent = fixedText;
+
+    if (caretOffset !== null){
+      const newOffset = caretOffset <= prefixIndex
+        ? prefixStr.length + caretOffset
+        : (caretOffset <= prefixIndex + prefixStr.length ? prefixStr.length + prefixIndex : caretOffset);
+      const r = document.createRange();
+      r.setStart(first, Math.min(newOffset, fixedText.length));
+      r.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    }
+  }
+
+  function fixListContinuationOnEnter(){
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const newBlock = getTopLevelBlock(sel.getRangeAt(0).startContainer);
+    const oldBlock = newBlock && newBlock.previousElementSibling;
+    if (!oldBlock || !newBlock.dataset.rhList || newBlock.dataset.rhList !== oldBlock.dataset.rhList) return;
+
+    const type = oldBlock.dataset.rhList;
+    const oldTextNoPrefix = oldBlock.textContent.replace(LIST_PREFIX_RE, '');
+    const newTextNoPrefix = newBlock.textContent.replace(LIST_PREFIX_RE, '');
+
+    if (!oldTextNoPrefix.trim() && !newTextNoPrefix.trim()){
+      // Enter pressed on an already-empty list line — treat it as "exit the
+      // list" (the common word-processor convention) instead of stacking up
+      // empty numbered/bulleted lines forever.
+      [oldBlock, newBlock].forEach(b=>{
+        stripListPrefix(b);
+        delete b.dataset.rhList;
+        b.style.paddingLeft = '';
+        b.style.textIndent = '';
+      });
+      return;
+    }
+
+    if (LIST_PREFIX_RE.test(newBlock.textContent)) return; // already has one somehow
+
+    const m = oldBlock.textContent.match(/^(\d+)\.\s?/);
+    const prefix = type === 'bullet' ? '● ' : (m ? parseInt(m[1], 10) + 1 : 1) + '. ';
+    const prefixNode = document.createTextNode(prefix);
+    newBlock.insertBefore(prefixNode, newBlock.firstChild);
+
+    const r = document.createRange();
+    r.setStart(prefixNode, prefix.length);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+
+    if (type === 'number') renumberFrom(oldBlock);
+  }
 
   // ---------- Indent / outdent ----------
   // Plain marginLeft on the <p> itself, rather than execCommand('indent')
@@ -220,7 +347,7 @@
   // ---------- Divider ----------
   // Two independent bugs made the divider vanish on paste, and both had to
   // be fixed:
-  // 1) A genuinely content-less block (the old empty <div> divider with no
+  // 1) A genuinely content-less block (the old <div class="rh-divider"> with no
   //    text inside) gets stripped by Gmail's paste sanitizer — confirmed
   //    because even a byte-exact raw-HTML paste dropped it, which rules out
   //    a clipboard-serialization bug and points at the sanitizer discarding
@@ -298,27 +425,54 @@
   // ---------- Image ----------
   document.getElementById('rhImage').addEventListener('click', ()=>{
     focusEditor();
-    const url = prompt('請輸入圖片網址（URL）：');
+    // This tool has no server of its own — it never uploads or hosts
+    // anything. The URL you paste here has to already be publicly reachable
+    // (the same way the logo in the signature below is just a link to an S3
+    // file). Once it's a real public URL, the exported <img src="..."> tag
+    // displays normally after pasting into Gmail — that's how virtually
+    // every image in an HTML email works; nothing about it depends on this
+    // tool being online.
+    const url = prompt('請輸入圖片網址（URL）：\n（需為已公開上線的圖片連結，例如圖床、雲端硬碟分享連結等；本工具不會上傳或代管圖片）');
     if (!url) return;
-    const sel = window.getSelection();
-    let range;
-    if (sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
-      range = sel.getRangeAt(0);
-    } else {
-      range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-    }
-    range.deleteContents();
+
     const img = document.createElement('img');
     img.src = url;
     img.alt = '圖片';
     img.setAttribute('style', 'max-width:100%;height:auto;display:block;border:0;margin:10px 0');
-    range.insertNode(img);
-    range.setStartAfter(img);
-    range.setEndAfter(img);
-    sel.removeAllRanges();
-    sel.addRange(range);
+
+    const sel = window.getSelection();
+    let anchorBlock = null;
+    if (sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+      anchorBlock = getTopLevelBlock(sel.getRangeAt(0).startContainer);
+    }
+    // Only insert inline at the caret when it's genuinely sitting inside a
+    // normal, editable paragraph. Otherwise (nothing selected, or the caret
+    // happens to be resting inside the fixed signature block or a divider —
+    // both of which sit at the very end of the editor, exactly where a
+    // "collapse to end" selection lands) the image could get wedged into
+    // that markup's own nested tables instead of the message body, which is
+    // what made it look like the button "didn't work".
+    const isSafeAnchor = anchorBlock && anchorBlock.parentNode === editor &&
+      !(anchorBlock.classList && (anchorBlock.classList.contains('rh-sig-block') || anchorBlock.classList.contains('rh-divider')));
+
+    if (isSafeAnchor){
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(img);
+      range.setStartAfter(img);
+      range.setEndAfter(img);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else {
+      const p = document.createElement('p');
+      p.appendChild(img);
+      const sigBlock = editor.querySelector('.rh-sig-block');
+      if (sigBlock){
+        editor.insertBefore(p, sigBlock);
+      } else {
+        editor.appendChild(p);
+      }
+    }
   });
 
   // ---------- Reset ----------
@@ -448,7 +602,6 @@
       holder.style.top = '0';
       holder.style.opacity = '0';
       holder.style.pointerEvents = 'none';
-      holder.contentEditable = 'true';
       holder.innerHTML = html;
       document.body.appendChild(holder);
 
