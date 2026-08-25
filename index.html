@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOL 工具箱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="reply.css">
+</head>
+<body>
+
+<nav class="site-tabs" id="siteTabs" aria-label="切換工具">
+  <button type="button" class="site-tab" data-view="invite">課程邀約信</button>
+  <button type="button" class="site-tab" data-view="reply">回信小幫手</button>
+</nav>
+
+<div id="view-invite">
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="logo-dot"></span>
+    KOL 合作邀約信件產生器
+  </div>
+  <div class="topbar-actions">
+    <select id="courseSelect" class="course-select">
+      <option value="">－ 新的一封信（未儲存） －</option>
+    </select>
+    <button id="btnNewCourse" class="btn btn-ghost" title="清空表單，開始新課程">＋ 新課程</button>
+    <button id="btnSave" class="btn btn-primary" title="儲存目前課程資料">儲存課程</button>
+    <button id="btnSaveAs" class="btn btn-ghost" title="另存為新課程">另存新檔</button>
+    <button id="btnDelete" class="btn btn-danger-ghost" title="刪除目前選取的課程">刪除</button>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- 左側：輸入欄位 -->
+  <section class="panel form-panel" id="formPanel">
+    <div class="save-status" id="saveStatus"></div>
+
+    <details class="group" open>
+      <summary>① 收件人與開場白</summary>
+      <div class="group-body">
+        <label>收件人稱呼 <span class="hint">例如：永和超級阿公</span>
+          <input type="text" data-field="recipientName" placeholder="永和超級阿公">
+        </label>
+        <label>寄件人自我介紹（暱稱）
+          <input type="text" data-field="senderIntroName" placeholder="Eri（ㄝ里）">
+        </label>
+        <label>開場觀察段落 <span class="hint">針對這位 KOL 粉專內容的客製化觀察</span>
+          <textarea data-field="openingObservation" rows="3" placeholder="有留意到粉專平時分享許多阿公的生活日常..."></textarea>
+        </label>
+      </div>
+    </details>
+
+    <details class="group" open>
+      <summary>② 課程合作邀請</summary>
+      <div class="group-body">
+        <label>合作對象介紹 <span class="hint">與___合作推出</span>
+          <input type="text" data-field="collaboratorIntro" placeholder="抗癌名醫－蔡松彥醫師">
+        </label>
+        <label>課程完整名稱
+          <input type="text" data-field="courseTitle" placeholder="抗癌名醫的超級細胞排毒｜逆轉發炎 X 重啟高效代謝">
+        </label>
+        <label>學員數
+          <input type="text" data-field="studentCount" placeholder="4,600">
+        </label>
+        <label>行銷推廣檔期
+          <input type="text" data-field="campaignPeriod" placeholder="2026 / 10月中 - 2026 / 11月初">
+        </label>
+        <label>欲詢問的合作形式 <span class="hint">每行一項，會自動用「／」連接</span>
+          <textarea data-field="requestedItems" rows="2" placeholder="FB貼文&#10;IG reels&#10;限動&#10;廣告主權限 2 週"></textarea>
+        </label>
+        <label>已合作的知名創作者 <span class="hint">每行一位，會自動用「、」連接</span>
+          <textarea data-field="famousKOLs" rows="2" placeholder="吳淡如&#10;曾寶儀"></textarea>
+        </label>
+        <label>課程簡介段落
+          <textarea data-field="courseIntroParagraph" rows="3" placeholder="由蔡松彥院長結合自身抗癌經驗、整合醫學與生活型態調整..."></textarea>
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>③ 課程亮點（可新增/刪除）</summary>
+      <div class="group-body">
+        <div id="highlightsList" class="repeater-list"></div>
+        <button type="button" id="btnAddHighlight" class="btn btn-ghost btn-sm">＋ 新增亮點</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>④ 課程圖片</summary>
+      <div class="group-body">
+        <div id="imagesList" class="repeater-list"></div>
+        <button type="button" id="btnAddImage" class="btn btn-ghost btn-sm">＋ 新增圖片網址</button>
+      </div>
+    </details>
+
+    <details class="group" open>
+      <summary>⑤ 行動呼籲與結尾</summary>
+      <div class="group-body">
+        <label>行動呼籲段落 <span class="hint">整段都可以自由改寫，用 **文字** 把文字設成螢光黃底＋粗體</span>
+          <textarea data-field="ctaParagraph" rows="3" placeholder="如果您有合作意願，我們後續會再進行更詳細的方向/內容討論！&#10;我們也非常樂意提供**課程試看內容**，讓您可以更安心了解課程內容！"></textarea>
+        </label>
+        <label>結尾鼓勵段落
+          <textarea data-field="closingNote" rows="2" placeholder="相信透過阿公的真實分享，可以鼓勵更多人開始關心自己的健康..."></textarea>
+        </label>
+        <label>署名
+          <input type="text" data-field="signOffName" placeholder="Eri">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑥ 下方課程詳細資訊區塊</summary>
+      <div class="group-body">
+        <label>課程連結網址
+          <input type="text" data-field="courseUrl" placeholder="https://sat.cool/course/175">
+        </label>
+        <label>痛點提問（粗體）
+          <input type="text" data-field="painQuestion" placeholder="明明做了很多，為什麼身體還是常常不舒服？">
+        </label>
+        <label>痛點段落 1
+          <textarea data-field="painBody1" rows="2" placeholder="看過醫生、做過療程，也試過飲食控制、運動、保健方法..."></textarea>
+        </label>
+        <label>痛點段落 2
+          <textarea data-field="painBody2" rows="2" placeholder="也許不是你做得不夠，而是沒看見真正的問題在哪！"></textarea>
+        </label>
+        <label>課程長篇介紹
+          <textarea data-field="courseDescLong" rows="3" placeholder="抗癌名醫蔡松彥結合自身抗癌經驗與整合醫學觀點..."></textarea>
+        </label>
+        <label>頂部圖片網址
+          <input type="text" data-field="topImageUrl" placeholder="https://...">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑦ 講師介紹</summary>
+      <div class="group-body">
+        <label>講師姓名
+          <input type="text" data-field="instructorName" placeholder="蔡松彥院長">
+        </label>
+        <label>講師簡介段落
+          <textarea data-field="instructorBio" rows="3" placeholder="出身主流醫學的三專科醫師..."></textarea>
+        </label>
+        <div id="credentialsList" class="repeater-list"></div>
+        <button type="button" id="btnAddCredential" class="btn btn-ghost btn-sm">＋ 新增經歷條列</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑧ 課程規格與價格</summary>
+      <div class="group-body">
+        <label>課程名稱（詳細介紹用）
+          <input type="text" data-field="courseNameDetail" placeholder="抗癌名醫的超級細胞排毒法｜逆轉慢性發炎、重啟高效代謝">
+        </label>
+        <label>課程時數
+          <input type="text" data-field="courseDuration" placeholder="5 小時 32 分，共計17個單元">
+        </label>
+        <label>預定售價
+          <input type="text" data-field="priceOriginal" placeholder="9,800 元">
+        </label>
+        <label>優惠說明
+          <input type="text" data-field="pricePromoNote" placeholder="活動期間會有優於6折優惠，搭配KOL專屬$500折價券">
+        </label>
+        <label>課程類型
+          <input type="text" data-field="courseType" placeholder="錄播式課程，線上無限次永久觀看">
+        </label>
+        <label>觀看平台
+          <input type="text" data-field="viewingPlatform" placeholder="SAT. Knowledge 知識衛星官網">
+        </label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>⑨ 寄件人簽名</summary>
+      <div class="group-body">
+        <p class="hint" style="margin:0">
+          排版、logo、市內電話都固定不開放編輯，只有下面這五個欄位可以改。
+        </p>
+        <label>中文姓名
+          <input type="text" data-field="senderChineseName" placeholder="董伊淇">
+        </label>
+        <label>英文姓名
+          <input type="text" data-field="senderEnglishName" placeholder="Eri Tung">
+        </label>
+        <label>職稱
+          <input type="text" data-field="senderJobTitle" placeholder="專案經理 Project Manager">
+        </label>
+        <label>Email
+          <input type="text" data-field="senderEmail" placeholder="eritung@sat.cool">
+        </label>
+        <label>手機
+          <input type="text" data-field="senderMobile" placeholder="0983-755-899">
+        </label>
+      </div>
+    </details>
+
+  </section>
+
+  <!-- 右側：即時預覽 -->
+  <section class="panel preview-panel">
+    <div class="preview-toolbar">
+      <span class="preview-label">即時預覽</span>
+      <button id="btnCopyHtml" class="btn btn-primary">📋 複製 HTML（貼到 Gmail）</button>
+    </div>
+    <div class="preview-frame-wrap">
+      <iframe id="previewFrame" title="信件預覽"></iframe>
+    </div>
+  </section>
+
+</main>
+
+</div>
+
+<div id="view-reply" hidden>
+<div class="rh-toolbar">
+  <div class="rh-toolbar-brand"><span class="rh-dot"></span>回信小幫手</div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn" id="rhBold" title="粗體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h5a3 3 0 0 1 0 6H6zM6 10h6a3 3 0 0 1 0 6H6z"/></svg><span class="rh-label">粗體</span></button>
+    <button class="rh-tbtn" id="rhItalic" title="斜體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 4h6M6 16h6M11 4 9 16"/></svg><span class="rh-label">斜體</span></button>
+    <button class="rh-tbtn" id="rhUnderline" title="底線"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><path d="M5 16h10"/></svg><span class="rh-label">底線</span></button>
+    <button class="rh-tbtn" id="rhHighlight" title="螢光筆標記選取文字"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 3.5 16 7l-7 7-4-1-1-4z"/><path d="M6 13l-2.5 4.5"/></svg><span class="rh-label">螢光筆</span></button>
+    <button class="rh-tbtn" id="rhBlue" title="藍字重點"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15h12M6 15 10 4l4 11M7.2 11h5.6"/></svg><span class="rh-label">藍字重點</span></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn" id="rhBullet" title="項目符號"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="4" cy="5.5" r="1" fill="currentColor" stroke="none"/><path d="M8 5.5h8"/><circle cx="4" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M8 10h8"/><circle cx="4" cy="14.5" r="1" fill="currentColor" stroke="none"/><path d="M8 14.5h8"/></svg><span class="rh-label">項目符號</span></button>
+    <button class="rh-tbtn" id="rhNumber" title="編號清單"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 5.5h8"/><rect x="3" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 10h8"/><rect x="3" y="13.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 14.5h8"/></svg><span class="rh-label">編號清單</span></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhOutdent" title="取消縮排"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h14M7 10h10M3 16h14"/><path d="M8 8v4l-3-2z" fill="currentColor" stroke="none"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhIndent" title="縮排"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h14M7 10h10M3 16h14"/><path d="M5 8v4l3-2z" fill="currentColor" stroke="none"/></svg></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignLeft" title="靠左對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M4 8h8M4 12h12M4 16h8"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignCenter" title="置中對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M6 8h8M4 12h12M6 16h8"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignRight" title="靠右對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M8 8h8M4 12h12M8 16h8"/></svg></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn" id="rhLink" title="插入連結"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.5 11.5a3 3 0 0 0 4.3.2l2-2a3 3 0 0 0-4.3-4.3l-1 .9"/><path d="M11.5 8.5a3 3 0 0 0-4.3-.2l-2 2a3 3 0 0 0 4.3 4.3l1-.9"/></svg><span class="rh-label">連結</span></button>
+    <button class="rh-tbtn" id="rhImage" title="插入圖片網址"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7.3" cy="8.3" r="1.1" fill="currentColor" stroke="none"/><path d="M4 14l4-4 3 3 2.5-2.5L17 14"/></svg><span class="rh-label">圖片</span></button>
+    <button class="rh-tbtn" id="rhDivider" title="插入分隔線"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10h12"/></svg><span class="rh-label">分隔線</span></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <div class="rh-tselect-wrap" title="調整整封信的字級">
+      <span class="rh-tselect-label">字級</span>
+      <select class="rh-tselect" id="rhFontSize">
+        <option value="13">13</option>
+        <option value="14">14</option>
+        <option value="15" selected>15</option>
+        <option value="16">16</option>
+        <option value="17">17</option>
+        <option value="18">18</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+    <div class="rh-tselect-wrap" title="調整整封信的行距">
+      <span class="rh-tselect-label">行距</span>
+      <select class="rh-tselect" id="rhLineHeight">
+        <option value="1.4">1.4</option>
+        <option value="1.6">1.6</option>
+        <option value="1.8" selected>1.8</option>
+        <option value="2.0">2.0</option>
+        <option value="2.2">2.2</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn rh-tbtn-icon" id="rhUndo" title="復原"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5 3 8l3 3"/><path d="M3 8h9a4.5 4.5 0 0 1 0 9H8"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhRedo" title="重做"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l3 3-3 3"/><path d="M17 8H8a4.5 4.5 0 0 0 0 9h4"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhClear" title="清除格式"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l-5 12H8"/><path d="M3 12l5-8"/><path d="M4 16h6"/></svg></button>
+  </div>
+
+  <div class="rh-spacer"></div>
+  <button class="rh-btn-reset" id="rhReset" title="清空並重新開始">重新開始</button>
+  <button class="rh-btn-reset" id="rhCopySource" title="複製 HTML 原始碼文字，可貼到 HTML 顯示器或其他工具核對排版">複製原始碼</button>
+  <button class="rh-btn-primary" id="rhCopy" title="複製排版好的 HTML，貼到 Gmail 會保留樣式"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="6" y="6" width="10" height="11" rx="1.2"/><path d="M4 12.5V4.8A1.8 1.8 0 0 1 5.8 3h7"/></svg>複製 HTML</button>
+</div>
+
+<div class="rh-source-panel" id="rhSourcePanel">
+  <div class="rh-source-panel-bar">
+    <span>HTML 原始碼（已自動選取，可按 Cmd/Ctrl+C 複製，或貼到任何 HTML 顯示器核對排版）</span>
+    <button id="rhCloseSource" class="rh-source-close" title="關閉">✕</button>
+  </div>
+  <textarea id="rhSourceText" readonly spellcheck="false"></textarea>
+</div>
+
+<div class="rh-legend">
+  <div class="rh-legend-item"><span class="rh-swatch rh-hl"></span>螢光筆＝強調重點</div>
+</div>
+
+<div class="rh-canvas-wrap">
+  <div class="rh-sheet">
+    <div id="rhEditor" contenteditable="true" spellcheck="false">
+      <p>Hi ___，您好！</p>
+      <p>謝謝您的來信，很高興能收到您的回覆！</p>
+      <p>在這裡自由輸入回信內容——選取文字後可以用上方工具列加上<span style="background-color:rgb(255,255,0)">螢光筆</span>強調重點。這段說明文字可以直接刪除，換成您真正要回覆的內容。</p>
+      <p>如果有任何問題，歡迎隨時與我們聯繫！</p>
+      <p class="rh-signoff">Sincerely,<br>Eri</p>
+      <div class="rh-sig-block"><div><br clear="all"></div><div><br></div><span class="gmail_signature_prefix">-- </span><br><div dir="ltr" class="gmail_signature" data-smartmail="gmail_signature"><div dir="ltr"><table style="font-size:16px;color:rgb(0,0,0);word-spacing:1px;font-family:-apple-system,&quot;helvetica neue&quot;;border-width:medium;border-style:none;border-color:currentcolor;border-collapse:collapse"><tbody><tr><td style="vertical-align:bottom;padding:5pt"><p dir="ltr" style="line-height:1.656;margin-top:0pt;margin-bottom:0pt"></p></td><td style="vertical-align:middle;padding:5pt"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt"><br></p></td></tr></tbody></table><table style="font-size:16px;word-spacing:1px;font-family:-apple-system,&quot;helvetica neue&quot;;border:rgb(34,34,34);border-collapse:collapse;color:rgb(34,34,34)"><tbody style="border-color:rgb(34,34,34)"><tr style="height:92.2702pt;border-color:rgb(34,34,34)"><td style="vertical-align:bottom;padding:5pt;border-color:rgb(34,34,34)"><p dir="ltr" style="line-height:1.656;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font size="2"><img src="https://s3.ap-northeast-1.amazonaws.com/s3.sat/logo/sat.s1_720.png" width="200" height="52" style="border-color:rgb(34,34,34)"><br></font></p></td><td style="vertical-align:middle;padding:5pt;border-color:rgb(34,34,34)"><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font size="2"><b><span style="font-family:&quot;ibm plex sans&quot;,sans-serif;vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)">董伊淇 |<span>&nbsp;</span></span><span style="border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)">Eri Tung</font></span></span></b></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font style="border-color:rgb(102,102,102);color:rgb(102,102,102)" size="2"><span style="font-family:verdana,sans-serif;border-color:rgb(102,102,102)">專案經理 Project Manager</span></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(34,34,34)" size="2"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)">T:<a href="tel:02-2756-6009" target="_blank">02-2756-6009</a>&nbsp;</span></font></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)" size="2">M:0983-755-899</font></span></p><p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;border-color:rgb(34,34,34)"><span style="vertical-align:baseline;border-color:rgb(0,0,0);color:rgb(0,0,0)"><font face="verdana, sans-serif" style="font-family:verdana,sans-serif;border-color:rgb(0,0,0)" size="2">E:eritung@sat.cool</font></span></p></td></tr></tbody></table></div></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="rh-hint-below">內容會直接以目前的排版複製，貼到 Gmail 回信視窗即可保留背景與樣式。</div>
+
+<div id="rhToast" class="rh-toast"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="template.js"></script>
+<script src="app.js"></script>
+<script src="reply.js"></script>
+<script src="tabs.js"></script>
+</body>
+</html>
