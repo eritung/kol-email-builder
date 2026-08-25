@@ -1,5 +1,5 @@
 (function(){
-  const rhEditor = document.getElementById('rhEditor');
+  const editor = document.getElementById('rhEditor');
   const toastEl = document.getElementById('rhToast');
   let toastTimer = null;
 
@@ -15,12 +15,20 @@
     toastTimer = setTimeout(()=>toastEl.classList.remove('rh-show'), 2400);
   }
 
-  function focusEditor(){ rhEditor.focus(); }
+  function focusEditor(){ editor.focus(); }
 
   // ---------- Basic commands ----------
   document.getElementById('rhBold').addEventListener('click', ()=>{
     focusEditor();
     document.execCommand('bold');
+  });
+  document.getElementById('rhItalic').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('italic');
+  });
+  document.getElementById('rhUnderline').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('underline');
   });
   document.getElementById('rhUndo').addEventListener('click', ()=>{
     focusEditor();
@@ -57,7 +65,7 @@
   document.getElementById('rhHighlight').addEventListener('click', ()=>{
     focusEditor();
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed || !rhEditor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
       showToast('請先選取要標記的文字');
       return;
     }
@@ -68,7 +76,7 @@
   document.getElementById('rhBlue').addEventListener('click', ()=>{
     focusEditor();
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed || !rhEditor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
       showToast('請先選取要標記的文字');
       return;
     }
@@ -77,36 +85,184 @@
   });
 
   // ---------- Typography (font size / line height) ----------
-  const rhFontSize = document.getElementById('rhFontSize');
-  const rhLineHeight = document.getElementById('rhLineHeight');
+  const selFontSize = document.getElementById('rhFontSize');
+  const selLineHeight = document.getElementById('rhLineHeight');
   function applyTypography(){
-    rhEditor.style.fontSize = rhFontSize.value + 'px';
-    rhEditor.style.lineHeight = rhLineHeight.value;
+    editor.style.fontSize = selFontSize.value + 'px';
+    editor.style.lineHeight = selLineHeight.value;
   }
-  rhFontSize.addEventListener('change', applyTypography);
-  rhLineHeight.addEventListener('change', applyTypography);
+  selFontSize.addEventListener('change', applyTypography);
+  selLineHeight.addEventListener('change', applyTypography);
   applyTypography();
 
+  // ---------- Block-level helpers (indent / list / align act on the
+  // top-level <p> that the caret or selection is inside) ----------
+  function getTopLevelBlock(node){
+    if (!node) return null;
+    if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentNode;
+    while (node && node.parentNode !== editor){
+      node = node.parentNode;
+    }
+    return (node && node.nodeType === Node.ELEMENT_NODE) ? node : null;
+  }
+
+  function getSelectedTopLevelBlocks(){
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return [];
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return [];
+    const startBlock = getTopLevelBlock(range.startContainer);
+    const endBlock = getTopLevelBlock(range.endContainer);
+    if (!startBlock) return [];
+    let blocks;
+    if (!endBlock || startBlock === endBlock){
+      blocks = [startBlock];
+    } else {
+      blocks = [];
+      let node = startBlock;
+      while (node){
+        blocks.push(node);
+        if (node === endBlock) break;
+        node = node.nextElementSibling;
+      }
+    }
+    // Dividers and the signature block aren't editable paragraphs — never
+    // let indent/list/align touch them even if a selection happens to span
+    // across one.
+    return blocks.filter(el => el && !(el.classList && (el.classList.contains('rh-divider') || el.classList.contains('rh-sig-block'))));
+  }
+
+  // ---------- Bullet / numbered "lists" ----------
+  // Real <ul>/<li> markup is exactly the kind of nested structure that email
+  // clients love to strip or reflow unpredictably on paste (same family of
+  // bug as the divider below). Instead we prepend a literal bullet/number
+  // character as plain text and fake the hanging indent with padding-left +
+  // a negative text-indent — plain <p> tags with inline styles, which is the
+  // one structure already proven to survive Gmail's paste sanitizer.
+  const LIST_PREFIX_RE = /^(?:● |\d+\. )/;
+
+  function stripListPrefix(el){
+    const first = el.firstChild;
+    if (first && first.nodeType === Node.TEXT_NODE && LIST_PREFIX_RE.test(first.textContent)){
+      const stripped = first.textContent.replace(LIST_PREFIX_RE, '');
+      if (stripped){
+        first.textContent = stripped;
+      } else {
+        el.removeChild(first);
+      }
+    }
+  }
+
+  function toggleListPrefix(type){
+    focusEditor();
+    const blocks = getSelectedTopLevelBlocks();
+    if (!blocks.length){
+      showToast('請先將游標移到要加上清單的段落');
+      return;
+    }
+    const already = blocks.every(el => el.dataset.rhList === type);
+    let n = 1;
+    blocks.forEach(el => {
+      stripListPrefix(el);
+      if (already){
+        delete el.dataset.rhList;
+        el.style.paddingLeft = '';
+        el.style.textIndent = '';
+      } else {
+        const prefix = type === 'bullet' ? '● ' : (n++) + '. ';
+        el.insertBefore(document.createTextNode(prefix), el.firstChild);
+        el.dataset.rhList = type;
+        el.style.paddingLeft = '20px';
+        el.style.textIndent = '-20px';
+      }
+    });
+  }
+
+  document.getElementById('rhBullet').addEventListener('click', ()=>toggleListPrefix('bullet'));
+  document.getElementById('rhNumber').addEventListener('click', ()=>toggleListPrefix('number'));
+
+  // ---------- Indent / outdent ----------
+  // Plain marginLeft on the <p> itself, rather than execCommand('indent')
+  // (which wraps content in a <blockquote> in most browsers — Gmail treats
+  // blockquotes as quoted-reply blocks and styles them accordingly, which is
+  // not what "indent this paragraph" should mean here).
+  function adjustIndent(delta){
+    focusEditor();
+    const blocks = getSelectedTopLevelBlocks();
+    if (!blocks.length){
+      showToast('請先將游標移到要縮排的段落');
+      return;
+    }
+    blocks.forEach(el => {
+      const current = parseInt(el.style.marginLeft, 10) || 0;
+      const next = Math.max(0, Math.min(96, current + delta));
+      el.style.marginLeft = next ? next + 'px' : '';
+    });
+  }
+
+  document.getElementById('rhIndent').addEventListener('click', ()=>adjustIndent(24));
+  document.getElementById('rhOutdent').addEventListener('click', ()=>adjustIndent(-24));
+
+  // ---------- Alignment ----------
+  document.getElementById('rhAlignLeft').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('justifyLeft');
+  });
+  document.getElementById('rhAlignCenter').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('justifyCenter');
+  });
+  document.getElementById('rhAlignRight').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('justifyRight');
+  });
+
   // ---------- Divider ----------
+  // Two independent bugs made the divider vanish on paste, and both had to
+  // be fixed:
+  // 1) A genuinely content-less block (the old empty <div> divider with no
+  //    text inside) gets stripped by Gmail's paste sanitizer — confirmed
+  //    because even a byte-exact raw-HTML paste dropped it, which rules out
+  //    a clipboard-serialization bug and points at the sanitizer discarding
+  //    empty blocks. Fix: a table cell with a literal &nbsp; always has
+  //    "content", so it survives — the standard "bulletproof email" divider.
+  // 2) Inserting at the literal caret position (via range.insertNode) lands
+  //    the new node wherever the Range's container happens to be — which,
+  //    since the caret is always logically "inside" some <p>, is usually as
+  //    a CHILD of that <p>, not as a sibling line of its own. A <table> is
+  //    not valid content inside a <p> at all, so once Gmail re-parses the
+  //    pasted HTML it has to un-nest it, and that reshuffling can mangle or
+  //    drop styling on the way. Fix: always insert the divider as a
+  //    top-level sibling of the current paragraph, using the same
+  //    getTopLevelBlock() helper the indent/list/align features use.
   document.getElementById('rhDivider').addEventListener('click', ()=>{
     focusEditor();
     const sel = window.getSelection();
-    let range;
-    if (sel.rangeCount && rhEditor.contains(sel.getRangeAt(0).commonAncestorContainer)){
-      range = sel.getRangeAt(0);
-      range.collapse(false);
-    } else {
-      range = document.createRange();
-      range.selectNodeContents(rhEditor);
-      range.collapse(false);
+    let anchorBlock = null;
+    if (sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+      anchorBlock = getTopLevelBlock(sel.getRangeAt(0).startContainer);
     }
-    const div = document.createElement('div');
-    div.className = 'rh-divider';
-    div.setAttribute('style', 'height:1px;background-color:rgb(225,227,225);margin:22px 0');
-    range.insertNode(div);
+
+    const table = document.createElement('table');
+    table.className = 'rh-divider';
+    table.setAttribute('role', 'presentation');
+    table.setAttribute('width', '100%');
+    table.setAttribute('cellspacing', '0');
+    table.setAttribute('cellpadding', '0');
+    table.setAttribute('border', '0');
+    table.setAttribute('style', 'width:100%;border-collapse:collapse;margin:22px 0');
+    table.innerHTML = '<tbody><tr><td style="height:1px;line-height:1px;font-size:1px;background-color:rgb(225,227,225)">&nbsp;</td></tr></tbody>';
+
+    if (anchorBlock && anchorBlock.parentNode === editor){
+      editor.insertBefore(table, anchorBlock.nextSibling);
+    } else {
+      editor.appendChild(table);
+    }
+
     const p = document.createElement('p');
     p.innerHTML = '<br>';
-    div.parentNode.insertBefore(p, div.nextSibling);
+    editor.insertBefore(p, table.nextSibling);
+
     const newRange = document.createRange();
     newRange.setStart(p, 0);
     newRange.collapse(true);
@@ -118,7 +274,7 @@
   document.getElementById('rhLink').addEventListener('click', ()=>{
     focusEditor();
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed || !rhEditor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
       showToast('請先選取要加上連結的文字');
       return;
     }
@@ -146,11 +302,11 @@
     if (!url) return;
     const sel = window.getSelection();
     let range;
-    if (sel.rangeCount && rhEditor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    if (sel.rangeCount && editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
       range = sel.getRangeAt(0);
     } else {
       range = document.createRange();
-      range.selectNodeContents(rhEditor);
+      range.selectNodeContents(editor);
       range.collapse(false);
     }
     range.deleteContents();
@@ -166,27 +322,27 @@
   });
 
   // ---------- Reset ----------
-  const rhReset = document.getElementById('rhReset');
-  const initialHTML = rhEditor.innerHTML;
+  const btnReset = document.getElementById('rhReset');
+  const initialHTML = editor.innerHTML;
   let confirmingReset = false;
   let resetTimer = null;
-  rhReset.addEventListener('click', ()=>{
+  btnReset.addEventListener('click', ()=>{
     if (!confirmingReset){
       confirmingReset = true;
-      rhReset.textContent = '確定清空？再按一次';
-      rhReset.classList.add('rh-confirming');
+      btnReset.textContent = '確定清空？再按一次';
+      btnReset.classList.add('rh-confirming');
       resetTimer = setTimeout(()=>{
         confirmingReset = false;
-        rhReset.textContent = '重新開始';
-        rhReset.classList.remove('rh-confirming');
+        btnReset.textContent = '重新開始';
+        btnReset.classList.remove('rh-confirming');
       }, 3000);
       return;
     }
     clearTimeout(resetTimer);
     confirmingReset = false;
-    rhReset.textContent = '重新開始';
-    rhReset.classList.remove('rh-confirming');
-    rhEditor.innerHTML = initialHTML;
+    btnReset.textContent = '重新開始';
+    btnReset.classList.remove('rh-confirming');
+    editor.innerHTML = initialHTML;
     showToast('已重新開始');
   });
 
@@ -202,6 +358,25 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // Indent / list / alignment all work by setting inline style properties
+  // (marginLeft, paddingLeft, textIndent, textAlign) directly on the live
+  // top-level <p>. transformBlock() below normally rebuilds a brand-new <p
+  // style="..."> from a fixed template — so without this, any of those
+  // properties would silently vanish from the "複製 HTML"/"複製原始碼"
+  // export even though they're visible in the live editor. Reading them back
+  // off the live element and appending them after the base style keeps them,
+  // since a later declaration for the same property wins within one style
+  // attribute.
+  function extraInlineStyle(el){
+    const parts = [];
+    const s = el.style;
+    if (s.marginLeft) parts.push('margin-left:' + s.marginLeft);
+    if (s.paddingLeft) parts.push('padding-left:' + s.paddingLeft);
+    if (s.textIndent) parts.push('text-indent:' + s.textIndent);
+    if (s.textAlign) parts.push('text-align:' + s.textAlign);
+    return parts.length ? (';' + parts.join(';')) : '';
+  }
+
   function transformBlock(node, fontSizePx){
     if (node.nodeType === Node.TEXT_NODE){
       const text = node.textContent;
@@ -215,24 +390,24 @@
       return el.innerHTML; // already fully self-contained Gmail signature markup — pass through as-is
     }
     if (el.classList && el.classList.contains('rh-divider')){
-      return el.outerHTML; // already inline-styled
+      return el.outerHTML; // already inline-styled (bulletproof table+td+&nbsp;)
     }
     if (el.tagName === 'BR'){
       return '<br>';
     }
     if (el.classList && el.classList.contains('rh-signoff')){
       const inner = el.innerHTML.trim() || '<br>';
-      return '<p style="color:rgb(51,51,51);margin:0px 0px 28px;font-size:' + fontSizePx + 'px"><font face="garamond, times new roman, serif">' + inner + '</font></p>';
+      return '<p style="color:rgb(51,51,51);margin:0px 0px 28px;font-size:' + fontSizePx + 'px' + extraInlineStyle(el) + '"><font face="garamond, times new roman, serif">' + inner + '</font></p>';
     }
     // generic paragraph-like block (P, or a DIV some browsers create on Enter)
     const inner = el.innerHTML.trim() || '<br>';
-    return '<p style="color:rgb(51,51,51);margin:0px 0px 22px;font-size:' + fontSizePx + 'px"><font face="ms pgothic, sans-serif">' + inner + '</font></p>';
+    return '<p style="color:rgb(51,51,51);margin:0px 0px 22px;font-size:' + fontSizePx + 'px' + extraInlineStyle(el) + '"><font face="ms pgothic, sans-serif">' + inner + '</font></p>';
   }
 
   function buildExportHtml(){
-    const fontSizePx = rhFontSize.value;
-    const lineHeight = rhLineHeight.value;
-    const clone = rhEditor.cloneNode(true);
+    const fontSizePx = selFontSize.value;
+    const lineHeight = selLineHeight.value;
+    const clone = editor.cloneNode(true);
     const bodyHtml = Array.from(clone.childNodes)
       .map(node => transformBlock(node, fontSizePx))
       .filter(Boolean)
@@ -250,7 +425,7 @@
 
   async function copyHtml(){
     const html = buildExportHtml();
-    const text = rhEditor.innerText;
+    const text = editor.innerText;
 
     try{
       if (navigator.clipboard && window.ClipboardItem){
@@ -268,12 +443,12 @@
     // offscreen copy of the export HTML and use the classic copy command.
     try{
       const holder = document.createElement('div');
-      holder.contentEditable = 'true';
       holder.style.position = 'fixed';
       holder.style.left = '-99999px';
       holder.style.top = '0';
       holder.style.opacity = '0';
       holder.style.pointerEvents = 'none';
+      holder.contentEditable = 'true';
       holder.innerHTML = html;
       document.body.appendChild(holder);
 
@@ -318,30 +493,32 @@
     }
   }
 
-  const rhSourcePanel = document.getElementById('rhSourcePanel');
-  const rhSourceText = document.getElementById('rhSourceText');
+  const sourcePanel = document.getElementById('rhSourcePanel');
+  const sourceText = document.getElementById('rhSourceText');
 
   document.getElementById('rhCopySource').addEventListener('click', ()=>{
     const html = buildExportHtml();
-    rhSourceText.value = html;
-    rhSourcePanel.classList.add('rh-show');
-    rhSourceText.focus();
-    rhSourceText.select();
+    sourceText.value = html;
+    sourcePanel.classList.add('rh-show');
+    sourceText.focus();
+    sourceText.select();
     const ok = copyPlainText(html);
     showToast(ok ? '已複製 HTML 原始碼！可貼到 HTML 顯示器核對排版' : '已顯示原始碼，請在下方文字框按 Cmd/Ctrl+A 全選、Cmd/Ctrl+C 複製');
   });
 
   document.getElementById('rhCloseSource').addEventListener('click', ()=>{
-    rhSourcePanel.classList.remove('rh-show');
+    sourcePanel.classList.remove('rh-show');
   });
 
   // ---------- Active-state feedback for bold ----------
   document.addEventListener('selectionchange', ()=>{
     const sel = window.getSelection();
     if (!sel.rangeCount) return;
-    if (!rhEditor.contains(sel.anchorNode)) return;
+    if (!editor.contains(sel.anchorNode)) return;
     try{
       document.getElementById('rhBold').classList.toggle('rh-active', document.queryCommandState('bold'));
+      document.getElementById('rhItalic').classList.toggle('rh-active', document.queryCommandState('italic'));
+      document.getElementById('rhUnderline').classList.toggle('rh-active', document.queryCommandState('underline'));
     }catch(e){}
   });
 })();

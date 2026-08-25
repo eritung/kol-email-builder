@@ -222,8 +222,23 @@
 
   <div class="rh-tgroup">
     <button class="rh-tbtn" id="rhBold" title="粗體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h5a3 3 0 0 1 0 6H6zM6 10h6a3 3 0 0 1 0 6H6z"/></svg><span class="rh-label">粗體</span></button>
+    <button class="rh-tbtn" id="rhItalic" title="斜體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 4h6M6 16h6M11 4 9 16"/></svg><span class="rh-label">斜體</span></button>
+    <button class="rh-tbtn" id="rhUnderline" title="底線"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><path d="M5 16h10"/></svg><span class="rh-label">底線</span></button>
     <button class="rh-tbtn" id="rhHighlight" title="螢光筆標記選取文字"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 3.5 16 7l-7 7-4-1-1-4z"/><path d="M6 13l-2.5 4.5"/></svg><span class="rh-label">螢光筆</span></button>
     <button class="rh-tbtn" id="rhBlue" title="藍字重點"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15h12M6 15 10 4l4 11M7.2 11h5.6"/></svg><span class="rh-label">藍字重點</span></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn" id="rhBullet" title="項目符號"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="4" cy="5.5" r="1" fill="currentColor" stroke="none"/><path d="M8 5.5h8"/><circle cx="4" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M8 10h8"/><circle cx="4" cy="14.5" r="1" fill="currentColor" stroke="none"/><path d="M8 14.5h8"/></svg><span class="rh-label">項目符號</span></button>
+    <button class="rh-tbtn" id="rhNumber" title="編號清單"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 5.5h8"/><rect x="3" y="9" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 10h8"/><rect x="3" y="13.5" width="2" height="2" rx="0.4" fill="currentColor" stroke="none"/><path d="M8 14.5h8"/></svg><span class="rh-label">編號清單</span></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhOutdent" title="取消縮排"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h14M7 10h10M3 16h14"/><path d="M8 8v4l-3-2z" fill="currentColor" stroke="none"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhIndent" title="縮排"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h14M7 10h10M3 16h14"/><path d="M5 8v4l3-2z" fill="currentColor" stroke="none"/></svg></button>
+  </div>
+
+  <div class="rh-tgroup">
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignLeft" title="靠左對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M4 8h8M4 12h12M4 16h8"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignCenter" title="置中對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M6 8h8M4 12h12M6 16h8"/></svg></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhAlignRight" title="靠右對齊"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h12M8 8h8M4 12h12M8 16h8"/></svg></button>
   </div>
 
   <div class="rh-tgroup">
@@ -296,7 +311,7 @@
 
 <div class="rh-hint-below">內容會直接以目前的排版複製，貼到 Gmail 回信視窗即可保留背景與樣式。</div>
 
-<div id="rhToast" class="rhToast"></div>
+<div id="rhToast" class="rh-toast"></div>
 </div>
 
 <div id="toast" class="toast"></div>
