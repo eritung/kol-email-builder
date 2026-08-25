@@ -66,9 +66,31 @@
     border-bottom:1px solid var(--rh-line);
     padding:10px 16px;
     display:flex;
+    align-items:flex-start;
+    gap:14px;
+  }
+  /* Left side holds every formatting tool and naturally claims most of the
+     row just by having more content in it; the right side is a compact,
+     visually separate cluster for the destructive/export actions (reset,
+     copy source, copy HTML) — same idea as Gmail keeping its dense toolbar
+     on one side and a small, distinct icon cluster on the other, rather
+     than splitting the bar down the middle. */
+  .rh-toolbar-left{
+    display:flex;
     align-items:center;
     gap:14px;
+    flex:1 1 auto;
+    min-width:0;
     flex-wrap:wrap;
+  }
+  .rh-toolbar-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:0 0 auto;
+    padding-left:14px;
+    margin-left:auto;
+    border-left:1px solid var(--rh-line);
   }
   .rh-toolbar-brand{
     display:flex;
@@ -114,8 +136,36 @@
   .rh-tbtn svg{width:15px;height:15px;flex:none;display:block;}
   .rh-tbtn.rh-active{background:var(--rh-blue-soft);color:var(--rh-blue);}
   .rh-tbtn-icon{padding:7px;}
+  .rh-tbtn .rh-glyph{font-size:12.5px;font-weight:700;line-height:1;}
 
-  .rh-spacer{flex:1 1 auto;}
+  .rh-color-wrap{position:relative;display:flex;}
+  /* [hidden] and a class-based `display` rule have equal CSS specificity,
+     so whichever is declared later in the stylesheet wins — without
+     :not([hidden]) here, this rule would silently win over the browser's
+     own `[hidden]{display:none}` and leave the dropdown visible (and
+     clickable) even while its `hidden` attribute is set. */
+  .rh-color-menu:not([hidden]){
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    display:flex;
+    gap:6px;
+    background:var(--rh-paper);
+    border:1px solid var(--rh-line);
+    border-radius:9px;
+    padding:8px;
+    box-shadow:var(--rh-shadow);
+    z-index:40;
+  }
+  .rh-color-swatch{
+    width:20px;height:20px;
+    border-radius:50%;
+    border:1px solid rgba(0,0,0,0.15);
+    cursor:pointer;
+    padding:0;
+    transition:transform .08s ease;
+  }
+  .rh-color-swatch:hover{transform:scale(1.15);}
 
   .rh-btn-primary{
     display:flex;
@@ -288,6 +338,51 @@
   }
   :root:not([data-theme="light"]) .rh-toast{ }
   .rh-toast.rh-show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Custom prompt dialog ----------
+     A page rendered inside a restricted viewer (an embedded/sandboxed
+     iframe, for instance) can silently block window.prompt() — the click
+     handler still runs, but no dialog ever appears, which looks exactly
+     like a dead button with no clue why. Rendering our own dialog removes
+     that dependency entirely and matches the rest of the tool's look. */
+  .rh-modal-overlay:not([hidden]){
+    position:fixed;
+    inset:0;
+    background:rgba(20,22,26,0.4);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    padding:16px;
+  }
+  .rh-modal-box{
+    background:var(--rh-paper);
+    border-radius:12px;
+    padding:20px;
+    width:min(420px, 100%);
+    box-shadow:var(--rh-shadow);
+  }
+  .rh-modal-title{
+    font-weight:700;
+    font-size:14px;
+    color:var(--rh-ink);
+    margin-bottom:10px;
+    white-space:pre-wrap;
+  }
+  .rh-modal-input{
+    width:100%;
+    box-sizing:border-box;
+    padding:9px 11px;
+    border:1px solid var(--rh-line);
+    border-radius:8px;
+    font-family:inherit;
+    font-size:13.5px;
+    color:var(--rh-ink);
+    background:var(--rh-chrome-bg);
+  }
+  .rh-modal-input:focus{outline:2px solid var(--rh-blue);outline-offset:1px;}
+  .rh-modal-hint{font-size:11.5px;color:var(--rh-muted);margin-top:8px;line-height:1.5;}
+  .rh-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
 
   @media (max-width:640px){
     .rh-toolbar{gap:8px;}

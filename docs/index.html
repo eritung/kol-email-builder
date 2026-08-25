@@ -218,6 +218,7 @@
 
 <div id="view-reply" hidden>
 <div class="rh-toolbar">
+ <div class="rh-toolbar-left">
   <div class="rh-toolbar-brand"><span class="rh-dot"></span>回信小幫手</div>
 
   <div class="rh-tgroup">
@@ -252,11 +253,24 @@
   </div>
 
   <div class="rh-tgroup">
-    <button class="rh-tbtn" id="rhBold" title="粗體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h5a3 3 0 0 1 0 6H6zM6 10h6a3 3 0 0 1 0 6H6z"/></svg><span class="rh-label">粗體</span></button>
-    <button class="rh-tbtn" id="rhItalic" title="斜體"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 4h6M6 16h6M11 4 9 16"/></svg><span class="rh-label">斜體</span></button>
-    <button class="rh-tbtn" id="rhUnderline" title="底線"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><path d="M5 16h10"/></svg><span class="rh-label">底線</span></button>
+    <button class="rh-tbtn" id="rhBold" title="粗體（Ctrl/⌘+B）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h5a3 3 0 0 1 0 6H6zM6 10h6a3 3 0 0 1 0 6H6z"/></svg><span class="rh-label">粗體</span></button>
+    <button class="rh-tbtn" id="rhItalic" title="斜體（Ctrl/⌘+I）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 4h6M6 16h6M11 4 9 16"/></svg><span class="rh-label">斜體</span></button>
+    <button class="rh-tbtn" id="rhUnderline" title="底線（Ctrl/⌘+U）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><path d="M5 16h10"/></svg><span class="rh-label">底線</span></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhSuper" title="上標"><span class="rh-glyph">x²</span></button>
+    <button class="rh-tbtn rh-tbtn-icon" id="rhSub" title="下標"><span class="rh-glyph">x₂</span></button>
     <button class="rh-tbtn" id="rhHighlight" title="螢光筆標記選取文字"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 3.5 16 7l-7 7-4-1-1-4z"/><path d="M6 13l-2.5 4.5"/></svg><span class="rh-label">螢光筆</span></button>
-    <button class="rh-tbtn" id="rhBlue" title="藍字重點"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15h12M6 15 10 4l4 11M7.2 11h5.6"/></svg><span class="rh-label">藍字重點</span></button>
+    <div class="rh-color-wrap">
+      <button class="rh-tbtn" id="rhColor" title="文字顏色"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 15h12M6 15 10 4l4 11M7.2 11h5.6"/></svg><span class="rh-label">文字顏色</span></button>
+      <div class="rh-color-menu" id="rhColorMenu" hidden>
+        <button type="button" class="rh-color-swatch" data-color="#20242b" style="background:#20242b" title="預設黑"></button>
+        <button type="button" class="rh-color-swatch" data-color="#265bf6" style="background:#265bf6" title="藍色"></button>
+        <button type="button" class="rh-color-swatch" data-color="#d64545" style="background:#d64545" title="紅色"></button>
+        <button type="button" class="rh-color-swatch" data-color="#1a7f37" style="background:#1a7f37" title="綠色"></button>
+        <button type="button" class="rh-color-swatch" data-color="#c2410c" style="background:#c2410c" title="橘色"></button>
+        <button type="button" class="rh-color-swatch" data-color="#7c3aed" style="background:#7c3aed" title="紫色"></button>
+        <button type="button" class="rh-color-swatch" data-color="#6b7280" style="background:#6b7280" title="灰色"></button>
+      </div>
+    </div>
   </div>
 
   <div class="rh-tgroup">
@@ -270,15 +284,18 @@
   </div>
 
   <div class="rh-tgroup">
-    <button class="rh-tbtn" id="rhLink" title="插入連結"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.5 11.5a3 3 0 0 0 4.3.2l2-2a3 3 0 0 0-4.3-4.3l-1 .9"/><path d="M11.5 8.5a3 3 0 0 0-4.3-.2l-2 2a3 3 0 0 0 4.3 4.3l1-.9"/></svg><span class="rh-label">連結</span></button>
+    <button class="rh-tbtn" id="rhQuoteBtn" title="引用區塊（適合引用對方原信內容）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4v12"/><path d="M9 6.5h8M9 10h8M9 13.5h5"/></svg><span class="rh-label">引用</span></button>
+    <button class="rh-tbtn" id="rhLink" title="插入連結（Ctrl/⌘+K；游標在既有連結上時可修改或移除）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8.5 11.5a3 3 0 0 0 4.3.2l2-2a3 3 0 0 0-4.3-4.3l-1 .9"/><path d="M11.5 8.5a3 3 0 0 0-4.3-.2l-2 2a3 3 0 0 0 4.3 4.3l1-.9"/></svg><span class="rh-label">連結</span></button>
     <button class="rh-tbtn" id="rhImage" title="插入圖片網址（需先有已公開上線的圖片網址）"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="1.5"/><circle cx="7.3" cy="8.3" r="1.1" fill="currentColor" stroke="none"/><path d="M4 14l4-4 3 3 2.5-2.5L17 14"/></svg><span class="rh-label">圖片</span></button>
     <button class="rh-tbtn" id="rhDivider" title="插入分隔線"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10h12"/></svg><span class="rh-label">分隔線</span></button>
   </div>
+ </div>
 
-  <div class="rh-spacer"></div>
+ <div class="rh-toolbar-right">
   <button class="rh-btn-reset" id="rhReset" title="清空並重新開始">重新開始</button>
   <button class="rh-btn-reset" id="rhCopySource" title="複製 HTML 原始碼文字，可貼到 HTML 顯示器或其他工具核對排版">複製原始碼</button>
   <button class="rh-btn-primary" id="rhCopy" title="複製排版好的 HTML，貼到 Gmail 會保留樣式"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="6" y="6" width="10" height="11" rx="1.2"/><path d="M4 12.5V4.8A1.8 1.8 0 0 1 5.8 3h7"/></svg>複製 HTML</button>
+ </div>
 </div>
 
 <div class="rh-source-panel" id="rhSourcePanel">
@@ -309,6 +326,18 @@
 <div class="rh-hint-below">內容會直接以目前的排版複製，貼到 Gmail 回信視窗即可保留背景與樣式。</div>
 
 <div id="rhToast" class="rh-toast"></div>
+
+<div class="rh-modal-overlay" id="rhModalOverlay" hidden>
+  <div class="rh-modal-box">
+    <div class="rh-modal-title" id="rhModalTitle"></div>
+    <input type="text" class="rh-modal-input" id="rhModalInput" autocomplete="off" spellcheck="false">
+    <div class="rh-modal-hint" id="rhModalHint"></div>
+    <div class="rh-modal-actions">
+      <button type="button" class="rh-btn-reset" id="rhModalCancel">取消</button>
+      <button type="button" class="rh-btn-primary" id="rhModalConfirm">確定</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <div id="toast" class="toast"></div>

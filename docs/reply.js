@@ -17,6 +17,49 @@
 
   function focusEditor(){ editor.focus(); }
 
+  // ---------- Custom prompt dialog ----------
+  // Replaces window.prompt() for the two places that need free-text input
+  // (link URL, image URL). Some viewers render this page inside a
+  // restricted iframe that silently swallows native prompt()/alert()/
+  // confirm() calls — the click handler still runs, the dialog just never
+  // shows up, which looks exactly like the button doing nothing. A dialog
+  // built out of ordinary DOM elements has no such dependency.
+  const modalOverlay = document.getElementById('rhModalOverlay');
+  const modalTitle = document.getElementById('rhModalTitle');
+  const modalInput = document.getElementById('rhModalInput');
+  const modalHint = document.getElementById('rhModalHint');
+  const modalCancel = document.getElementById('rhModalCancel');
+  const modalConfirm = document.getElementById('rhModalConfirm');
+  let modalResolve = null;
+
+  function closeModal(result){
+    modalOverlay.hidden = true;
+    const resolve = modalResolve;
+    modalResolve = null;
+    if (resolve) resolve(result);
+  }
+  modalCancel.addEventListener('click', ()=>closeModal(null));
+  modalConfirm.addEventListener('click', ()=>closeModal(modalInput.value));
+  modalOverlay.addEventListener('click', (e)=>{ if (e.target === modalOverlay) closeModal(null); });
+  modalInput.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter'){ e.preventDefault(); closeModal(modalInput.value); }
+    else if (e.key === 'Escape'){ e.preventDefault(); closeModal(null); }
+  });
+
+  // Resolves with the entered string on confirm/Enter (possibly an empty
+  // string), or null on cancel/Escape/clicking outside — same contract as
+  // window.prompt() so existing call sites didn't need to change shape.
+  function showPrompt(title, defaultValue, hint){
+    modalTitle.textContent = title;
+    modalInput.value = defaultValue || '';
+    modalHint.textContent = hint || '';
+    modalHint.style.display = hint ? 'block' : 'none';
+    modalOverlay.hidden = false;
+    modalInput.focus();
+    modalInput.select();
+    return new Promise(resolve => { modalResolve = resolve; });
+  }
+
   // ---------- Basic commands ----------
   document.getElementById('rhBold').addEventListener('click', ()=>{
     focusEditor();
@@ -73,16 +116,81 @@
     document.execCommand('backColor', false, isHighlighted ? 'transparent' : 'rgb(255,255,0)');
   });
 
-  document.getElementById('rhBlue').addEventListener('click', ()=>{
+  document.getElementById('rhSuper').addEventListener('click', ()=>{
     focusEditor();
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
-      showToast('請先選取要標記的文字');
+    document.execCommand('superscript');
+  });
+  document.getElementById('rhSub').addEventListener('click', ()=>{
+    focusEditor();
+    document.execCommand('subscript');
+  });
+
+  // ---------- Text color picker ----------
+  // A small dropdown of preset swatches replaces the old single-color
+  // "blue" quick button. The dropdown itself is a plain (non-editable) div,
+  // so clicking it moves focus away from the editor — but the selection
+  // Range survives that focus change (Chromium keeps it around even once
+  // the editable region blurs), the same way the existing Bold/Highlight
+  // buttons already rely on being able to call focusEditor() and then act
+  // on whatever was selected. Confirmed this holds across the extra click
+  // needed to open the dropdown first.
+  const btnColor = document.getElementById('rhColor');
+  const colorMenu = document.getElementById('rhColorMenu');
+  btnColor.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    colorMenu.hidden = !colorMenu.hidden;
+  });
+  colorMenu.querySelectorAll('.rh-color-swatch').forEach(sw=>{
+    sw.addEventListener('click', ()=>{
+      focusEditor();
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+        showToast('請先選取要上色的文字');
+        colorMenu.hidden = true;
+        return;
+      }
+      document.execCommand('foreColor', false, sw.dataset.color);
+      colorMenu.hidden = true;
+    });
+  });
+  document.addEventListener('click', (e)=>{
+    if (!colorMenu.hidden && !colorMenu.contains(e.target) && e.target !== btnColor){
+      colorMenu.hidden = true;
+    }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && !colorMenu.hidden) colorMenu.hidden = true;
+  });
+
+  // ---------- Blockquote ----------
+  // Real <blockquote> tags render inconsistently once Gmail re-parses
+  // pasted HTML (extra default margins, sometimes a nested quote strip
+  // added on top of ours). Same fix as the bullet/number lists above:
+  // toggle plain inline styles on the existing top-level <p> instead of
+  // introducing a new tag.
+  function toggleBlockquote(){
+    focusEditor();
+    const blocks = getSelectedTopLevelBlocks();
+    if (!blocks.length){
+      showToast('請先將游標移到要引用的段落');
       return;
     }
-    const isBlue = colorIncludes('foreColor', '38,91,246') || colorIncludes('foreColor', '#265bf6');
-    document.execCommand('foreColor', false, isBlue ? 'rgb(51,51,51)' : '#265bf6');
-  });
+    const already = blocks.every(el => el.dataset.rhQuote === '1');
+    blocks.forEach(el => {
+      if (already){
+        delete el.dataset.rhQuote;
+        el.style.borderLeft = '';
+        el.style.paddingLeft = '';
+        el.style.color = '';
+      } else {
+        el.dataset.rhQuote = '1';
+        el.style.borderLeft = '3px solid #d7dae0';
+        el.style.paddingLeft = '12px';
+        el.style.color = '#6b7280';
+      }
+    });
+  }
+  document.getElementById('rhQuoteBtn').addEventListener('click', toggleBlockquote);
 
   // ---------- Typography (font size / line height) ----------
   const selFontSize = document.getElementById('rhFontSize');
@@ -305,6 +413,24 @@
     sel.removeAllRanges();
     sel.addRange(r);
 
+    // Chromium quietly resets the caret to the very start of this text node
+    // (offset 0, before the prefix we just inserted) sometime after this
+    // handler returns — confirmed via logging that it happens by the next
+    // microtask checkpoint, not on any later tick. Re-applying the same
+    // range inside a microtask (Promise.resolve().then) lands strictly
+    // after that reset but is still guaranteed by the JS spec to finish
+    // draining before the next real keystroke's task can run, so there's no
+    // race to lose even when typing starts immediately — confirmed with
+    // repeated zero-delay typing tests. (A later rAF/setTimeout reassertion
+    // was tried before and found to race real typing; a microtask does not.)
+    Promise.resolve().then(()=>{
+      const r2 = document.createRange();
+      r2.setStart(prefixNode, prefix.length);
+      r2.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r2);
+    });
+
     if (type === 'number') renumberFrom(oldBlock);
   }
 
@@ -329,6 +455,25 @@
 
   document.getElementById('rhIndent').addEventListener('click', ()=>adjustIndent(24));
   document.getElementById('rhOutdent').addEventListener('click', ()=>adjustIndent(-24));
+
+  // ---------- Keyboard shortcuts ----------
+  // Tab/Shift+Tab: without preventDefault the browser would just move focus
+  // out of the editor (standard form-field tabbing behaviour), which is not
+  // useful inside a document editor — indent/outdent the current
+  // paragraph(s) instead, the same as clicking the indent/outdent buttons.
+  // Ctrl/Cmd+K: open the same insert/edit-link flow as the toolbar button,
+  // matching the shortcut most editors (Gmail included) use for links.
+  editor.addEventListener('keydown', (e)=>{
+    if (e.key === 'Tab'){
+      e.preventDefault();
+      adjustIndent(e.shiftKey ? -24 : 24);
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      insertOrEditLink();
+    }
+  });
 
   // ---------- Alignment ----------
   document.getElementById('rhAlignLeft').addEventListener('click', ()=>{
@@ -398,16 +543,41 @@
   });
 
   // ---------- Link ----------
-  document.getElementById('rhLink').addEventListener('click', ()=>{
+  async function insertOrEditLink(){
     focusEditor();
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
+    if (!sel.rangeCount || !editor.contains(sel.getRangeAt(0).commonAncestorContainer)){
       showToast('請先選取要加上連結的文字');
       return;
     }
-    const url = prompt('請輸入連結網址：', 'https://');
-    if (!url) return;
     const range = sel.getRangeAt(0);
+
+    // Editing/removing an existing link: just having the caret inside one is
+    // enough (no need to select the link text first) — otherwise there's no
+    // way to change a URL without retyping the whole link from scratch.
+    let node = range.commonAncestorContainer;
+    if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentNode;
+    const existingLink = node ? node.closest('a') : null;
+
+    if (existingLink){
+      const url = await showPrompt('修改連結網址：', existingLink.href, '清空後按確定＝移除這個連結');
+      if (url === null) return;
+      if (!url.trim()){
+        const parent = existingLink.parentNode;
+        while (existingLink.firstChild) parent.insertBefore(existingLink.firstChild, existingLink);
+        parent.removeChild(existingLink);
+      } else {
+        existingLink.setAttribute('href', url);
+      }
+      return;
+    }
+
+    if (sel.isCollapsed){
+      showToast('請先選取要加上連結的文字');
+      return;
+    }
+    const url = await showPrompt('請輸入連結網址：', 'https://');
+    if (!url) return;
     const a = document.createElement('a');
     a.href = url;
     a.target = '_blank';
@@ -420,10 +590,11 @@
       range.insertNode(a);
     }
     sel.removeAllRanges();
-  });
+  }
+  document.getElementById('rhLink').addEventListener('click', insertOrEditLink);
 
   // ---------- Image ----------
-  document.getElementById('rhImage').addEventListener('click', ()=>{
+  document.getElementById('rhImage').addEventListener('click', async ()=>{
     focusEditor();
     // This tool has no server of its own — it never uploads or hosts
     // anything. The URL you paste here has to already be publicly reachable
@@ -432,7 +603,7 @@
     // displays normally after pasting into Gmail — that's how virtually
     // every image in an HTML email works; nothing about it depends on this
     // tool being online.
-    const url = prompt('請輸入圖片網址（URL）：\n（需為已公開上線的圖片連結，例如圖床、雲端硬碟分享連結等；本工具不會上傳或代管圖片）');
+    const url = await showPrompt('請輸入圖片網址（URL）：', '', '需為已公開上線的圖片連結，例如圖床、雲端硬碟分享連結等；本工具不會上傳或代管圖片');
     if (!url) return;
 
     const img = document.createElement('img');
@@ -528,6 +699,8 @@
     if (s.paddingLeft) parts.push('padding-left:' + s.paddingLeft);
     if (s.textIndent) parts.push('text-indent:' + s.textIndent);
     if (s.textAlign) parts.push('text-align:' + s.textAlign);
+    if (s.borderLeft) parts.push('border-left:' + s.borderLeft);
+    if (s.color) parts.push('color:' + s.color);
     return parts.length ? (';' + parts.join(';')) : '';
   }
 
@@ -672,6 +845,8 @@
       document.getElementById('rhBold').classList.toggle('rh-active', document.queryCommandState('bold'));
       document.getElementById('rhItalic').classList.toggle('rh-active', document.queryCommandState('italic'));
       document.getElementById('rhUnderline').classList.toggle('rh-active', document.queryCommandState('underline'));
+      document.getElementById('rhSuper').classList.toggle('rh-active', document.queryCommandState('superscript'));
+      document.getElementById('rhSub').classList.toggle('rh-active', document.queryCommandState('subscript'));
     }catch(e){}
   });
 })();
