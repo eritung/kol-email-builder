@@ -397,9 +397,25 @@ document.getElementById('btnCopyHtml').addEventListener('click', async () => {
   const html = renderEmailHTML(state.current);
   try {
     if (navigator.clipboard && window.ClipboardItem) {
+      // The text/plain fallback must be human-readable text, not the raw
+      // HTML markup string — some paste targets (a plain-text field, "paste
+      // without formatting", or a paste handler that doesn't negotiate
+      // text/html) fall back to text/plain, and if that's literally the
+      // <div><table>... source, what shows up looks exactly like "it only
+      // copied the source code" instead of the actual rendered email. A
+      // detached (but rendered, just positioned off-screen) element gives
+      // us the same innerText the visible preview would show.
+      const plainTextHolder = document.createElement('div');
+      plainTextHolder.style.position = 'fixed';
+      plainTextHolder.style.left = '-9999px';
+      plainTextHolder.innerHTML = html;
+      document.body.appendChild(plainTextHolder);
+      const plainText = plainTextHolder.innerText;
+      document.body.removeChild(plainTextHolder);
+
       const item = new ClipboardItem({
         'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([html], { type: 'text/plain' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' }),
       });
       await navigator.clipboard.write([item]);
       showToast('已複製！可以直接貼到 Gmail 草稿內容區');
