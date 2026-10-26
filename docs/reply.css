@@ -385,7 +385,14 @@
   .rh-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
 
   @media (max-width:640px){
-    .rh-toolbar{gap:8px;}
+    .rh-toolbar{gap:8px;flex-direction:column;}
+    .rh-toolbar-left,.rh-toolbar-right{width:100%;}
+    .rh-toolbar-right{
+      flex-wrap:wrap;
+      padding-left:0;
+      margin-left:0;
+      border-left:0;
+    }
     .rh-tgroup{padding-right:8px;gap:2px;}
     .rh-tbtn{padding:6px 8px;font-size:11.5px;}
     .rh-tbtn span.rh-label{display:none;}

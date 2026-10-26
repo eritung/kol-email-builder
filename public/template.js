@@ -145,11 +145,11 @@ function renderEmailHTML(raw) {
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;background-color:#f5f6f8">
     <tbody>
       <tr>
-        <td align="center" style="padding:24px 12px">
+        <td align="center" style="padding:20px 8px">
           <table role="presentation" width="700" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:700px;border-collapse:collapse;background-color:#ffffff;border-top:5px solid #265bf6">
             <tbody>
               <tr>
-                <td style="padding:34px;line-height:1.8;word-break:break-word">
+                <td style="padding:28px 24px;line-height:1.8;word-break:break-word">
 
                   <p style="color:rgb(51,51,51);margin:0px 0px 22px"><font face="${BODY_FONT}">${escapeHtml(d.recipientName)}，您好！</font></p>
 
@@ -221,13 +221,15 @@ function renderEmailHTML(raw) {
 
                   <div style="height:1px;background-color:rgb(225,227,225);margin:0px 0px 28px"></div>
 
-                  <table style="font-size:16px;font-family:-apple-system,'helvetica neue';border-collapse:collapse;color:rgb(34,34,34)">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;font-size:16px;font-family:-apple-system,'helvetica neue';border-collapse:collapse;color:rgb(34,34,34)">
                     <tbody>
                       <tr>
-                        <td style="vertical-align:bottom;padding:5pt">
-                          ${d.companyLogoUrl ? `<img src="${escapeHtml(d.companyLogoUrl)}" width="200" style="border:0;display:block">` : ''}
+                        <td style="vertical-align:top;padding:0 0 12px">
+                          ${d.companyLogoUrl ? `<img src="${escapeHtml(d.companyLogoUrl)}" alt="SAT. Knowledge 知識衛星" width="160" style="width:160px;max-width:100%;height:auto;border:0;display:block">` : ''}
                         </td>
-                        <td style="vertical-align:middle;padding:5pt">
+                      </tr>
+                      <tr>
+                        <td style="vertical-align:top;padding:0;word-break:break-word">
                           <p style="line-height:1.38;margin:0"><font size="2"><b><span style="font-family:'ibm plex sans',sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderChineseName)} | </span><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">${escapeHtml(d.senderEnglishName)}</span></b></font></p>
                           <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(102,102,102)">${escapeHtml(d.senderJobTitle)}</span></font></p>
                           <p style="line-height:1.38;margin:0"><font size="2"><span style="font-family:verdana,sans-serif;color:rgb(0,0,0)">T:${escapeHtml(d.senderPhone)}</span></font></p>
